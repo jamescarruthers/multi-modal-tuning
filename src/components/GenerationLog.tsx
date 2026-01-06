@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
+import { encodeGenes, formatGeneCode } from '../optimization/geneCodec';
 
 interface GenerationEntry {
   generation: number;
@@ -27,7 +28,21 @@ export function GenerationLog({
   const [isExpanded, setIsExpanded] = useState(false);
   const [sortKey, setSortKey] = useState<SortKey>('generation');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
+  const [copiedGeneration, setCopiedGeneration] = useState<number | null>(null);
   const logEndRef = useRef<HTMLDivElement>(null);
+
+  // Handle copying gene code
+  const handleCopyGeneCode = async (e: React.MouseEvent, genes: number[], generation: number) => {
+    e.stopPropagation(); // Prevent row selection
+    const geneCode = encodeGenes(genes);
+    try {
+      await navigator.clipboard.writeText(geneCode);
+      setCopiedGeneration(generation);
+      setTimeout(() => setCopiedGeneration(null), 2000);
+    } catch (err) {
+      console.error('Failed to copy:', err);
+    }
+  };
 
   // Sort entries based on current sort key and direction
   const sortedEntries = useMemo(() => {
@@ -134,6 +149,7 @@ export function GenerationLog({
                     f{i + 1} err{getSortIndicator(`error${i}`)}
                   </th>
                 ))}
+                <th className="gene-code-header">Gene Code</th>
               </tr>
             </thead>
             <tbody>
@@ -153,8 +169,30 @@ export function GenerationLog({
                       {err >= 0 ? '+' : ''}{err.toFixed(1)}¢
                     </td>
                   ))}
+                  <td className="gene-code-cell">
+                    <button
+                      type="button"
+                      className="copy-gene-btn"
+                      onClick={(e) => handleCopyGeneCode(e, entry.genes, entry.generation)}
+                      title="Copy gene code to clipboard"
+                    >
+                      {copiedGeneration === entry.generation ? 'Copied!' : 'Copy'}
+                    </button>
+                  </td>
                 </tr>
               ))}
+              {selectedGeneration !== null && sortedEntries.find(e => e.generation === selectedGeneration) && (
+                <tr className="gene-code-detail-row">
+                  <td colSpan={3 + targetFrequencies.length}>
+                    <div className="gene-code-detail">
+                      <span className="gene-code-label">Gene Code (Gen {selectedGeneration}):</span>
+                      <code className="gene-code-value">
+                        {formatGeneCode(encodeGenes(sortedEntries.find(e => e.generation === selectedGeneration)!.genes))}
+                      </code>
+                    </div>
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
           <div ref={logEndRef} />

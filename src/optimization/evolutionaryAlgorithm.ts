@@ -42,6 +42,7 @@ export interface EAConfig {
   penaltyType: 'volume' | 'roughness' | 'none';
   penaltyWeight: number;
   eaParams: EAParameters;
+  seedGenes?: number[];  // Optional seed genes to initialize population
   onProgress?: (update: ProgressUpdate) => void;
   shouldStop?: () => boolean;
 }
@@ -153,6 +154,7 @@ export async function runEvolutionaryAlgorithm(config: EAConfig): Promise<Optimi
     penaltyType,
     penaltyWeight,
     eaParams,
+    seedGenes,
     onProgress,
     shouldStop
   } = config;
@@ -169,8 +171,8 @@ export async function runEvolutionaryAlgorithm(config: EAConfig): Promise<Optimi
   const f1Priority = eaParams.f1Priority ?? 1;
   const hasLengthAdjust = (eaParams.maxLengthTrim ?? 0) > 0 || (eaParams.maxLengthExtend ?? 0) > 0;
 
-  // Initialize population
-  let population = initializePopulation(eaParams.populationSize, numCuts, bounds);
+  // Initialize population (with optional seed)
+  let population = initializePopulation(eaParams.populationSize, numCuts, bounds, seedGenes);
 
   // Evaluate initial population
   // When length adjustment is enabled, use per-individual evaluation (different bar lengths)

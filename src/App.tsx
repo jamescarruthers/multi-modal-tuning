@@ -17,6 +17,7 @@ import {
   Individual
 } from './types';
 import { genesToCuts } from './physics/barProfile';
+import { encodeGenes, decodeGenes, isValidGeneCode, formatGeneCode } from './optimization/geneCodec';
 import './styles/main.css';
 
 // Import worker
@@ -53,6 +54,7 @@ function App() {
   const [maxLengthExtend, setMaxLengthExtend] = useState(0); // mm, 0 = no extension
   const [maxCores, setMaxCores] = useState(0); // 0 = auto (use all available cores)
   const [targetError, setTargetError] = useState(0.01); // % error threshold to stop early
+  const [seedGeneCode, setSeedGeneCode] = useState(''); // Gene code for seeding optimization
 
   // Optimization state
   const [isRunning, setIsRunning] = useState(false);
@@ -142,6 +144,9 @@ function App() {
     const material = MATERIALS[selectedMaterial];
     const targetFreqs = getTargetFrequencies();
 
+    // Decode seed genes if provided
+    const seedGenes = seedGeneCode ? decodeGenes(seedGeneCode) : undefined;
+
     const params: OptimizationParams = {
       bar: {
         L: barLength / 1000,      // Convert mm to m
@@ -171,7 +176,8 @@ function App() {
         maxLengthTrim: maxLengthTrim / 1000,  // Convert mm to m
         maxLengthExtend: maxLengthExtend / 1000,  // Convert mm to m
         maxCores
-      }
+      },
+      seedGenes: seedGenes || undefined
     };
 
     // Start optimization
@@ -208,6 +214,7 @@ function App() {
     maxLengthExtend,
     maxCores,
     targetError,
+    seedGeneCode,
     getTargetFrequencies
   ]);
 
@@ -303,6 +310,8 @@ function App() {
         onMaxCoresChange={setMaxCores}
         targetError={targetError}
         onTargetErrorChange={setTargetError}
+        seedGeneCode={seedGeneCode}
+        onSeedGeneCodeChange={setSeedGeneCode}
       />
 
       <div className="main-content">
@@ -345,6 +354,7 @@ function App() {
             cuts={result.cuts}
             lengthTrim={result.lengthTrim}
             effectiveLength={result.effectiveLength}
+            genes={result.bestIndividual.genes}
           />
         )}
       </div>

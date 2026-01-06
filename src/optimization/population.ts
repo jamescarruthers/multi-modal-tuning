@@ -191,21 +191,51 @@ export function createAdaptiveIndividual(
 }
 
 /**
- * Initialize a population of random individuals
+ * Initialize a population of random individuals, optionally seeded with initial genes
  *
  * @param populationSize - Number of individuals
  * @param numCuts - Number of cuts per individual
  * @param bounds - Variable bounds
+ * @param seedGenes - Optional seed genes to use for initial individual(s)
  * @returns Array of individuals
  */
 export function initializePopulation(
   populationSize: number,
   numCuts: number,
-  bounds: VariableBounds
+  bounds: VariableBounds,
+  seedGenes?: number[]
 ): Individual[] {
-  return Array.from({ length: populationSize }, () =>
-    createRandomIndividual(numCuts, bounds)
-  );
+  const population: Individual[] = [];
+
+  // If seed genes provided, create an individual from them
+  if (seedGenes && seedGenes.length > 0) {
+    const clampedGenes = clampToBounds(seedGenes, bounds);
+    population.push({
+      genes: clampedGenes,
+      fitness: Infinity
+    });
+
+    // Also add some mutated variants of the seed for diversity
+    const numVariants = Math.min(Math.floor(populationSize * 0.2), 10); // 20% or max 10 variants
+    for (let i = 0; i < numVariants && population.length < populationSize; i++) {
+      const variantGenes = clampedGenes.map(g => {
+        // Add small random variation (±5%)
+        const variation = g * (0.95 + Math.random() * 0.1);
+        return variation;
+      });
+      population.push({
+        genes: clampToBounds(variantGenes, bounds),
+        fitness: Infinity
+      });
+    }
+  }
+
+  // Fill remaining slots with random individuals
+  while (population.length < populationSize) {
+    population.push(createRandomIndividual(numCuts, bounds));
+  }
+
+  return population;
 }
 
 /**

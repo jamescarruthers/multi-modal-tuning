@@ -106,6 +106,7 @@ export interface OptimizationParams {
   penaltyType: 'volume' | 'roughness' | 'none';
   penaltyWeight: number;      // alpha (0-1)
   eaParams: EAParameters;
+  seedGenes?: number[];       // Optional seed genes to initialize population
 }
 
 // App state for UI

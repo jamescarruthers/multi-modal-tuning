@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useMemo } from 'react';
 import { MATERIALS, getMaterialsByCategory } from '../data/materials';
 import { TUNING_PRESETS, calculateTargetFrequencies } from '../data/tuningPresets';
 import { Material } from '../types';
+import { isValidGeneCode } from '../optimization/geneCodec';
 
 // Note name to frequency conversion (A4 = 440 Hz)
 const NOTE_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
@@ -98,6 +99,7 @@ interface InputPanelProps {
   maxLengthExtend: number;
   maxCores: number;
   targetError: number;
+  seedGeneCode: string;
   onNumCutsChange: (n: number) => void;
   onPenaltyTypeChange: (type: 'volume' | 'roughness' | 'none') => void;
   onPenaltyWeightChange: (weight: number) => void;
@@ -113,6 +115,7 @@ interface InputPanelProps {
   onMaxLengthExtendChange: (extend: number) => void;
   onMaxCoresChange: (cores: number) => void;
   onTargetErrorChange: (error: number) => void;
+  onSeedGeneCodeChange: (code: string) => void;
 }
 
 export function InputPanel(props: InputPanelProps) {
@@ -685,6 +688,24 @@ export function InputPanel(props: InputPanelProps) {
               min={10}
               max={500}
             />
+          </div>
+        </div>
+
+        <div className="form-group">
+          <label className="form-label">Seed Gene Code (optional)</label>
+          <input
+            type="text"
+            className={`form-input seed-input ${props.seedGeneCode && !isValidGeneCode(props.seedGeneCode) ? 'input-error' : ''}`}
+            value={props.seedGeneCode}
+            onChange={e => props.onSeedGeneCodeChange(e.target.value)}
+            placeholder="Paste gene code to resume optimization"
+          />
+          <div className="input-hint">
+            {props.seedGeneCode
+              ? isValidGeneCode(props.seedGeneCode)
+                ? 'Valid gene code - will seed initial population'
+                : 'Invalid gene code format'
+              : 'Paste a gene code from a previous run to continue refining'}
           </div>
         </div>
       </div>

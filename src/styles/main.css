@@ -647,11 +647,123 @@ body {
   font-weight: 500;
 }
 
+/* Gene code column in log table */
+.gene-code-header {
+  width: 60px;
+  text-align: center !important;
+}
+
+.gene-code-cell {
+  text-align: center !important;
+  padding: 4px 6px !important;
+}
+
+.copy-gene-btn {
+  padding: 2px 8px;
+  font-size: 10px;
+  background: var(--bg-color);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  cursor: pointer;
+  color: var(--text-muted);
+  transition: all 0.15s;
+}
+
+.copy-gene-btn:hover {
+  background: var(--primary-color);
+  color: white;
+  border-color: var(--primary-color);
+}
+
+/* Gene code detail row (shown when generation selected) */
+.gene-code-detail-row {
+  background: rgba(37, 99, 235, 0.05);
+}
+
+.gene-code-detail-row td {
+  padding: 8px 10px !important;
+}
+
+.gene-code-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.gene-code-detail .gene-code-label {
+  font-size: 10px;
+  color: var(--text-muted);
+  margin-bottom: 0;
+}
+
+.gene-code-detail .gene-code-value {
+  font-family: 'SF Mono', Monaco, 'Consolas', monospace;
+  font-size: 10px;
+  word-break: break-all;
+  color: var(--text-color);
+  background: var(--panel-bg);
+  padding: 6px 8px;
+  border-radius: 4px;
+  border: 1px solid var(--border-color);
+}
+
 .slider-hint,
 .input-hint {
   font-size: 11px;
   color: var(--text-muted);
   margin-top: 4px;
+}
+
+.form-input.input-error {
+  border-color: var(--error-color);
+}
+
+.form-input.input-error:focus {
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
+}
+
+/* Gene code display */
+.gene-code-container {
+  margin-top: 16px;
+  padding: 12px;
+  background: var(--bg-color);
+  border-radius: 6px;
+}
+
+.gene-code-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+}
+
+.gene-code-value {
+  font-family: 'SF Mono', Monaco, 'Consolas', monospace;
+  font-size: 10px;
+  word-break: break-all;
+  color: var(--text-color);
+  background: var(--panel-bg);
+  padding: 8px;
+  border-radius: 4px;
+  border: 1px solid var(--border-color);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.gene-code-value:hover {
+  background: var(--border-color);
+}
+
+.gene-code-hint {
+  font-size: 10px;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+/* Seed input styling */
+.seed-input {
+  font-family: 'SF Mono', Monaco, 'Consolas', monospace;
+  font-size: 11px;
 }
 
 /* Attribution */

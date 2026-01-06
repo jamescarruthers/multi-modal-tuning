@@ -1,4 +1,6 @@
+import { useState } from 'react';
 import { Cut } from '../types';
+import { encodeGenes, formatGeneCode } from '../optimization/geneCodec';
 
 interface ResultsSummaryProps {
   tuningError: number;
@@ -8,6 +10,7 @@ interface ResultsSummaryProps {
   cuts: Cut[];
   lengthTrim?: number;        // m, length adjustment (positive = trim, negative = extend)
   effectiveLength?: number;   // m, total effective length after adjustment
+  genes?: number[];           // Best individual's genes for encoding
 }
 
 export function ResultsSummary({
@@ -17,8 +20,25 @@ export function ResultsSummary({
   generations,
   cuts,
   lengthTrim,
-  effectiveLength
+  effectiveLength,
+  genes
 }: ResultsSummaryProps) {
+  const [copied, setCopied] = useState(false);
+
+  const geneCode = genes ? formatGeneCode(encodeGenes(genes)) : null;
+
+  const handleCopyGeneCode = async () => {
+    if (geneCode) {
+      try {
+        await navigator.clipboard.writeText(geneCode.replace(/-/g, ''));
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      } catch (err) {
+        console.error('Failed to copy:', err);
+      }
+    }
+  };
+
   const getErrorClass = (cents: number): string => {
     if (cents <= 2) return 'success';
     if (cents <= 10) return 'warning';
@@ -95,6 +115,22 @@ export function ResultsSummary({
           );
         })}
       </div>
+
+      {geneCode && (
+        <div className="gene-code-container">
+          <div className="gene-code-label">Gene Code</div>
+          <div
+            className="gene-code-value"
+            onClick={handleCopyGeneCode}
+            title="Click to copy"
+          >
+            {geneCode}
+          </div>
+          <div className="gene-code-hint">
+            {copied ? 'Copied!' : 'Click to copy - paste into "Seed Gene Code" to resume optimization'}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

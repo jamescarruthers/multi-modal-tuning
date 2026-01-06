@@ -96,6 +96,7 @@ async function startOptimization(params: OptimizationParams): Promise<void> {
       penaltyType: params.penaltyType,
       penaltyWeight: params.penaltyWeight,
       eaParams: params.eaParams,
+      seedGenes: params.seedGenes,
       onProgress: (update: ProgressUpdate) => {
         postMessage({
           type: 'PROGRESS',
