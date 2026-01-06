@@ -1,73 +1,90 @@
-# React + TypeScript + Vite
+# Multi-Modal Bar Tuning
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A web-based tool for optimizing the frequency ratios of vibrating bars (such as marimba, xylophone, or vibraphone bars) using evolutionary algorithms and finite element analysis.
 
-Currently, two official plugins are available:
+## Overview
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+This application helps instrument makers and acoustics researchers design tuned percussion bars with specific frequency ratios between vibrational modes. By strategically removing material (creating an undercut profile), the natural frequencies of the bar can be adjusted to achieve harmonic or other desired tuning relationships.
 
-## React Compiler
+The optimization uses:
+- **Finite Element Method (FEM)** for computing bar vibration frequencies
+- **Evolutionary Algorithm (EA)** for finding optimal cut profiles
+- **WebAssembly (Rust/WASM)** for high-performance parallel computation
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Features
 
-## Expanding the ESLint configuration
+- **Multiple tuning presets**: Harmonic (1:4:10), Gamelan, Marimba, and more
+- **Custom tuning ratios**: Define your own frequency relationships
+- **Material library**: Metals (aluminum, brass, steel) and woods (rosewood, padauk, maple)
+- **Adjustable constraints**: Control cut width, depth, and length trimming/extension
+- **Real-time visualization**: See the bar profile evolve during optimization
+- **Parallel processing**: WASM with multi-threading for fast computation
+- **Configurable stopping criteria**: Set target error threshold for early termination
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## Getting Started
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+### Prerequisites
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+- Node.js 18+
+- Rust toolchain with `wasm-pack` (for building WASM module)
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+### Installation
+
+```bash
+# Install dependencies
+npm install
+
+# Build and run development server
+npm run dev
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+### Building for Production
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm run build
 ```
+
+## Usage
+
+1. **Set bar dimensions**: Length, width, and thickness in millimeters
+2. **Select material**: Choose from metals or woods, or use custom properties
+3. **Choose tuning target**: Select a preset or enter custom frequency ratios
+4. **Set fundamental frequency**: The target f₁ (can enter as note name like "C4")
+5. **Configure optimization**: Number of cuts, constraints, and algorithm parameters
+6. **Run optimization**: Click "Start" and watch the profile evolve
+7. **Review results**: Check achieved frequencies and export the profile
+
+## How It Works
+
+The bar is modeled as a Timoshenko beam with variable cross-section. The optimizer searches for the best undercut profile by:
+
+1. **Encoding**: Each solution is a genome representing cut positions (λ) and depths (h)
+2. **Evaluation**: FEM computes the first N natural frequencies for each profile
+3. **Fitness**: Error is calculated as the weighted deviation from target frequency ratios
+4. **Evolution**: Tournament selection, crossover, and mutation create new generations
+5. **Termination**: Stops when target error is reached or max generations exceeded
+
+## Project Structure
+
+```
+multi-modal-tuning/
+├── src/
+│   ├── components/       # React UI components
+│   ├── data/             # Materials and tuning presets
+│   ├── optimization/     # Evolutionary algorithm
+│   ├── physics/          # FEM and WASM bridge
+│   ├── types/            # TypeScript interfaces
+│   └── workers/          # Web Worker for background optimization
+├── wasm_physics/         # Rust WASM module for parallel FEM
+└── public/
+```
+
+## References
+
+This tool is based on the methodology described in:
+
+> Soares, F., Music, J., & Antunes, J. (2020). *Computational optimization of marimba bar profiles for targeted modal tuning*. [HAL-04240657](https://hal.science/hal-04240657v1/file/soares2020.pdf)
+
+## License
+
+MIT
