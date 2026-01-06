@@ -28,9 +28,10 @@ jobs:
           cache: 'npm'
 
       - name: Setup Rust
-        uses: dtolnay/rust-toolchain@stable
+        uses: dtolnay/rust-toolchain@nightly
         with:
           targets: wasm32-unknown-unknown
+          components: rust-src
 
       - name: Install wasm-pack
         run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
@@ -38,7 +39,9 @@ jobs:
       - name: Build WASM module
         run: |
           cd wasm-physics
-          wasm-pack build --target web --release
+          RUSTFLAGS='-C target-feature=+atomics,+bulk-memory,+mutable-globals' wasm-pack build --target web --release
+        env:
+          CARGO_UNSTABLE_BUILD_STD: panic_abort,std
 
       - name: Install dependencies
         run: npm ci
