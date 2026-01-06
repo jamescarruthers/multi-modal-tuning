@@ -5,7 +5,7 @@ import topLevelAwait from 'vite-plugin-top-level-await'
 
 // https://vite.dev/config/
 export default defineConfig({
-  base: process.env.NODE_ENV === 'production' ? '/MultiModalEvolutionTuning-Claude/' : '/',
+  base: process.env.NODE_ENV === 'production' ? '/multi-modal-tuning/' : '/',
   plugins: [react(), wasm(), topLevelAwait()],
   worker: {
     format: 'es',
