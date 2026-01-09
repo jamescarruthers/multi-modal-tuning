@@ -9,6 +9,13 @@ import { Individual, VariableBounds } from '../types';
 import { clampToBounds } from './population';
 
 /**
+ * Frequency error info for adaptive length mutation
+ */
+export interface FrequencyError {
+  f1Error: number;  // f1_computed - f1_target (positive = too high, negative = too low)
+}
+
+/**
  * Uniform random mutation
  * As described in paper Section 3.3:
  * 1. Randomly select number of genes to mutate (1 to 2N)
@@ -60,6 +67,104 @@ export function uniformMutation(
     // Random mutation: r is uniform [-1, 1]
     const r = (Math.random() * 2 - 1);
     genes[idx] += sigma * range * r;
+  }
+
+  // Clamp to bounds
+  const mutatedGenes = clampToBounds(genes, bounds);
+
+  return {
+    genes: mutatedGenes,
+    fitness: Infinity,
+    sigmas: individual.sigmas ? [...individual.sigmas] : undefined
+  };
+}
+
+/**
+ * Adaptive mutation with gradient-aware length adjustment
+ *
+ * When mutating the length gene, biases the direction based on f₁ error:
+ * - If f₁ is too high (positive error), bias toward trimming (positive length adjust)
+ * - If f₁ is too low (negative error), bias toward extending (negative length adjust)
+ *
+ * Physics: f₁ ∝ 1/L², so shorter bar = higher frequency
+ *
+ * @param individual - Individual to mutate
+ * @param sigma - Mutation strength (normalized to bounds)
+ * @param bounds - Variable bounds
+ * @param freqError - Optional frequency error info for adaptive length mutation
+ * @param adaptiveBias - How strongly to bias toward the correct direction (0-1, default 0.7)
+ * @returns Mutated individual
+ */
+export function adaptiveLengthMutation(
+  individual: Individual,
+  sigma: number,
+  bounds: VariableBounds,
+  freqError?: FrequencyError,
+  adaptiveBias: number = 0.7
+): Individual {
+  const genes = [...individual.genes];
+  const numGenes = genes.length;
+
+  // Step 1: Random number of genes to mutate
+  const numMutate = Math.floor(Math.random() * numGenes) + 1;
+
+  // Step 2: Select which genes to mutate
+  const indicesToMutate: Set<number> = new Set();
+  while (indicesToMutate.size < numMutate) {
+    indicesToMutate.add(Math.floor(Math.random() * numGenes));
+  }
+
+  // Determine if length adjustment gene is present
+  const hasLengthAdjust = bounds.maxLengthTrim > 0 || bounds.maxLengthExtend > 0;
+  const numCuts = hasLengthAdjust ? Math.floor((numGenes - 1) / 2) : Math.floor(numGenes / 2);
+  const cutGenesCount = numCuts * 2;
+  const lengthGeneIdx = cutGenesCount;
+
+  // Step 3: Mutate selected genes
+  for (const idx of indicesToMutate) {
+    // Determine bound range for this gene
+    let range: number;
+
+    if (hasLengthAdjust && idx === lengthGeneIdx) {
+      // This is the length adjustment gene - use adaptive mutation
+      range = bounds.maxLengthTrim + bounds.maxLengthExtend;
+
+      if (freqError && Math.abs(freqError.f1Error) > 0.001) {
+        // Use gradient-aware mutation for length gene
+        // f1Error > 0 means f1 is too high, need to extend (negative length adjust)
+        // f1Error < 0 means f1 is too low, need to trim (positive length adjust)
+
+        // Determine desired direction: positive = trim, negative = extend
+        const desiredDirection = freqError.f1Error < 0 ? 1 : -1;
+
+        // Generate biased random value
+        // With probability adaptiveBias, move in the correct direction
+        // With probability (1 - adaptiveBias), move randomly for exploration
+        let r: number;
+        if (Math.random() < adaptiveBias) {
+          // Biased: move in the desired direction with random magnitude
+          r = desiredDirection * Math.random();
+        } else {
+          // Random exploration
+          r = (Math.random() * 2 - 1);
+        }
+
+        genes[idx] += sigma * range * r;
+      } else {
+        // No frequency error info, use standard random mutation
+        const r = (Math.random() * 2 - 1);
+        genes[idx] += sigma * range * r;
+      }
+    } else {
+      // Cut genes: alternating lambda and h - standard random mutation
+      const isLambda = idx % 2 === 0;
+      range = isLambda
+        ? bounds.lambdaMax - bounds.lambdaMin
+        : bounds.hMax - bounds.hMin;
+
+      const r = (Math.random() * 2 - 1);
+      genes[idx] += sigma * range * r;
+    }
   }
 
   // Clamp to bounds

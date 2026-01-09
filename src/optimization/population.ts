@@ -72,6 +72,40 @@ export function createBounds(
 }
 
 /**
+ * Create an "uncut bar" individual - baseline with no modifications
+ * All lambdas = 0 (no cuts), all heights = h0 (full thickness)
+ *
+ * @param numCuts - Number of cuts (determines gene array size)
+ * @param bounds - Variable bounds (used for h0 via hMax when minCutDepth=0)
+ * @param h0 - Original bar thickness
+ * @returns Individual representing an uncut bar
+ */
+export function createUncutBarIndividual(
+  numCuts: number,
+  bounds: VariableBounds,
+  h0: number
+): Individual {
+  const genes: number[] = [];
+
+  // All cuts have lambda=0 and h=h0 (no material removed)
+  for (let i = 0; i < numCuts; i++) {
+    genes.push(0);   // lambda = 0 (no cut extent)
+    genes.push(h0);  // h = h0 (full original thickness)
+  }
+
+  // Add length adjustment gene if enabled (set to 0 = no trim/extend)
+  const hasLengthAdjust = bounds.maxLengthTrim > 0 || bounds.maxLengthExtend > 0;
+  if (hasLengthAdjust) {
+    genes.push(0);  // No length adjustment
+  }
+
+  return {
+    genes,
+    fitness: Infinity  // Will be evaluated later
+  };
+}
+
+/**
  * Create a random individual within bounds, respecting min/max cut width constraints
  *
  * Cut width = difference between adjacent lambdas (the step width in the wedding cake)

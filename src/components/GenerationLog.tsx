@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { encodeGenes, formatGeneCode } from '../optimization/geneCodec';
 
 interface GenerationEntry {
@@ -29,7 +29,19 @@ export function GenerationLog({
   const [sortKey, setSortKey] = useState<SortKey>('generation');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
   const [copiedGeneration, setCopiedGeneration] = useState<number | null>(null);
+  const [isUserScrolled, setIsUserScrolled] = useState(false);
+  const logContentRef = useRef<HTMLDivElement>(null);
   const logEndRef = useRef<HTMLDivElement>(null);
+
+  // Track if user has scrolled away from bottom
+  const handleScroll = useCallback(() => {
+    const container = logContentRef.current;
+    if (!container) return;
+
+    // Check if scrolled to bottom (with small tolerance)
+    const isAtBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 20;
+    setIsUserScrolled(!isAtBottom);
+  }, []);
 
   // Handle copying gene code
   const handleCopyGeneCode = async (e: React.MouseEvent, genes: number[], generation: number) => {
@@ -84,12 +96,17 @@ export function GenerationLog({
     return sortDirection === 'asc' ? ' ▲' : ' ▼';
   };
 
-  // Auto-scroll to bottom when new entries arrive (if expanded and sorted by generation asc)
+  // Auto-scroll to bottom when new entries arrive, but only if user hasn't scrolled up
   useEffect(() => {
-    if (isExpanded && logEndRef.current && sortKey === 'generation' && sortDirection === 'asc') {
+    if (isExpanded && logEndRef.current && sortKey === 'generation' && sortDirection === 'asc' && !isUserScrolled) {
       logEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
-  }, [entries.length, isExpanded, sortKey, sortDirection]);
+  }, [entries.length, isExpanded, sortKey, sortDirection, isUserScrolled]);
+
+  // Reset scroll tracking when log is collapsed/expanded or sort changes
+  useEffect(() => {
+    setIsUserScrolled(false);
+  }, [isExpanded, sortKey, sortDirection]);
 
   if (entries.length === 0) {
     return null;
@@ -124,7 +141,7 @@ export function GenerationLog({
       </button>
 
       {isExpanded && (
-        <div className="log-content">
+        <div className="log-content" ref={logContentRef} onScroll={handleScroll}>
           <table className="log-table">
             <thead>
               <tr>

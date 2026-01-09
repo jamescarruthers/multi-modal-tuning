@@ -10,20 +10,28 @@ interface BarProfileSVGProps {
 }
 
 export function BarProfileSVG({ length, thickness, cuts, showDimensions, effectiveLength }: BarProfileSVGProps) {
+  // Validate inputs to prevent NaN in SVG paths
+  const safeLength = length > 0 && !isNaN(length) ? length : 100;
+  const safeThickness = thickness > 0 && !isNaN(thickness) ? thickness : 10;
+  const safeEffectiveLength = effectiveLength && !isNaN(effectiveLength) ? effectiveLength : safeLength;
+
   // Calculate length adjustment from each end
   // If effectiveLength < length: trimming (positive adjustment), show in red
   // If effectiveLength > length: extension (negative adjustment), show in green
-  const lengthDiff = effectiveLength ? effectiveLength - length : 0;
+  const lengthDiff = safeEffectiveLength - safeLength;
   const adjustFromEachEnd = Math.abs(lengthDiff) / 2;
-  const hasTrim = lengthDiff < 0;  // Bar shortened
-  const hasExtend = lengthDiff > 0;  // Bar lengthened
+  const hasTrim = lengthDiff < -0.01;  // Bar shortened (with small tolerance)
+  const hasExtend = lengthDiff > 0.01;  // Bar lengthened (with small tolerance)
   const hasAdjustment = hasTrim || hasExtend;
 
-  // Convert cuts from meters to mm for display
-  const cutsInMm = cuts.map(cut => ({
-    lambda: cut.lambda * 1000,
-    h: cut.h * 1000
-  }));
+  // Convert cuts from meters to mm for display, filtering out invalid values
+  const cutsInMm = cuts
+    .filter(cut => typeof cut.lambda === 'number' && typeof cut.h === 'number' &&
+                   !isNaN(cut.lambda) && !isNaN(cut.h))
+    .map(cut => ({
+      lambda: cut.lambda * 1000,
+      h: cut.h * 1000
+    }));
 
   // Sort cuts by lambda descending (largest first = outermost cut)
   const sortedCuts = [...cutsInMm].sort((a, b) => b.lambda - a.lambda);
@@ -35,10 +43,10 @@ export function BarProfileSVG({ length, thickness, cuts, showDimensions, effecti
   const plotWidth = svgWidth - padding.left - padding.right;
 
   // Use true aspect ratio - same scale for x and y
-  const xScale = plotWidth / length;
+  const xScale = plotWidth / safeLength;
   // Bar height in pixels = thickness * xScale (same scale as length)
   // But ensure a minimum visible height and maximum reasonable height
-  const trueBarHeight = thickness * xScale;
+  const trueBarHeight = safeThickness * xScale;
   const minBarHeight = 30;  // Minimum pixels for very thin bars
   const maxBarHeight = 150; // Maximum pixels to prevent overly tall display
   const barHeight = Math.max(minBarHeight, Math.min(maxBarHeight, trueBarHeight));
@@ -47,18 +55,18 @@ export function BarProfileSVG({ length, thickness, cuts, showDimensions, effecti
   const svgHeight = padding.top + barHeight + padding.bottom;
 
   // Scale factors - use same scale for proper aspect ratio
-  const yScale = barHeight / thickness;
+  const yScale = barHeight / safeThickness;
 
   // Y coordinates: top of bar at barTop, original bottom at barBottom
   const barTop = padding.top;
   const barBottom = padding.top + barHeight;
 
   // Center X in SVG coordinates
-  const centerXSvg = padding.left + (length / 2) * xScale;
+  const centerXSvg = padding.left + (safeLength / 2) * xScale;
 
   // Generate the bar outline path (with undercuts)
   const barOutlinePath = useMemo(() => {
-    const centerX = length / 2;
+    const centerX = safeLength / 2;
 
     // Compute height at a given x position
     // The bar has undercuts on the bottom - cuts define regions from center
@@ -73,7 +81,7 @@ export function BarProfileSVG({ length, thickness, cuts, showDimensions, effecti
       );
 
       if (containingCuts.length === 0) {
-        return thickness; // Outside all cuts = original thickness
+        return safeThickness; // Outside all cuts = original thickness
       }
 
       // Return the height of the innermost (smallest lambda) containing cut
@@ -85,14 +93,19 @@ export function BarProfileSVG({ length, thickness, cuts, showDimensions, effecti
     // These are the cut boundaries (symmetric around center)
     const xPositions: number[] = [0];
     for (const cut of sortedCuts) {
-      if (cut.lambda > 0 && cut.lambda < centerX) {
+      if (cut.lambda > 0) {
         const leftBoundary = centerX - cut.lambda;
         const rightBoundary = centerX + cut.lambda;
-        xPositions.push(leftBoundary);
-        xPositions.push(rightBoundary);
+        // Only add boundaries that are within the bar
+        if (leftBoundary > 0) {
+          xPositions.push(leftBoundary);
+        }
+        if (rightBoundary < safeLength) {
+          xPositions.push(rightBoundary);
+        }
       }
     }
-    xPositions.push(length);
+    xPositions.push(safeLength);
 
     // Sort and remove duplicates
     const sortedX = [...new Set(xPositions)].sort((a, b) => a - b);
@@ -128,7 +141,7 @@ export function BarProfileSVG({ length, thickness, cuts, showDimensions, effecti
     let path = `M ${padding.left} ${barTop}`;
     path += ` L ${padding.left + plotWidth} ${barTop}`;
 
-    // Down right edge to bottom profile
+    // Down right edge to the rightmost bottom point
     const lastPoint = bottomPoints[bottomPoints.length - 1];
     path += ` L ${padding.left + plotWidth} ${lastPoint.y}`;
 
@@ -137,12 +150,14 @@ export function BarProfileSVG({ length, thickness, cuts, showDimensions, effecti
       path += ` L ${bottomPoints[i].x} ${bottomPoints[i].y}`;
     }
 
-    // Up left edge back to start
+    // Close left edge: from first bottom point up to top-left
+    const firstPoint = bottomPoints[0];
+    path += ` L ${padding.left} ${firstPoint.y}`;
     path += ` L ${padding.left} ${barTop}`;
     path += ' Z';
 
     return path;
-  }, [sortedCuts, length, thickness, xScale, yScale, barTop, padding.left, plotWidth]);
+  }, [sortedCuts, safeLength, safeThickness, xScale, yScale, barTop, padding.left, plotWidth]);
 
   return (
     <div className="bar-profile-container panel">
@@ -286,7 +301,7 @@ export function BarProfileSVG({ length, thickness, cuts, showDimensions, effecti
           <polygon points={`${padding.left - 17},${barBottom} ${padding.left - 20},${barBottom - 6} ${padding.left - 14},${barBottom - 6}`} fill="#444" />
           {/* Label */}
           <text x={padding.left - 30} y={(barTop + barBottom) / 2} textAnchor="end" fontSize="11" fill="#333" dominantBaseline="middle">
-            h₀ = {thickness} mm
+            h₀ = {safeThickness} mm
           </text>
         </g>
 
@@ -303,8 +318,8 @@ export function BarProfileSVG({ length, thickness, cuts, showDimensions, effecti
           {/* Label */}
           <text x={centerXSvg} y={barBottom + 48} textAnchor="middle" fontSize="11" fill="#333">
             {hasAdjustment
-              ? `L = ${effectiveLength?.toFixed(1)} mm (original: ${length} mm)`
-              : `L = ${length} mm`
+              ? `L = ${safeEffectiveLength.toFixed(1)} mm (original: ${safeLength} mm)`
+              : `L = ${safeLength} mm`
             }
           </text>
         </g>
@@ -320,7 +335,7 @@ export function BarProfileSVG({ length, thickness, cuts, showDimensions, effecti
           const cutsByLambda = [...sortedCuts].filter(c => c.lambda > 0).sort((a, b) => a.lambda - b.lambda);
 
           return cutsByLambda.map((cut, i) => {
-            const centerX = length / 2;
+            const centerX = safeLength / 2;
             // Distance from left end to where this cut starts
             const distFromLeft = centerX - cut.lambda;
             // Total width of the cut (spans both sides of center)
@@ -352,7 +367,7 @@ export function BarProfileSVG({ length, thickness, cuts, showDimensions, effecti
 
                 {/* Cut label with depth */}
                 <text x={rightEdgeX + 8} y={dimLineY + 3} fontSize="9" fill="#1565c0">
-                  Cut {i + 1}: depth {(thickness - cut.h).toFixed(2)} mm
+                  Cut {i + 1}: depth {(safeThickness - cut.h).toFixed(2)} mm
                 </text>
               </g>
             );

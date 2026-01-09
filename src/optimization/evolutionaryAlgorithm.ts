@@ -18,6 +18,7 @@ import {
 import {
   initializePopulation,
   createBounds,
+  createUncutBarIndividual,
   getBestIndividual,
   calculatePopulationStats,
   cloneIndividual,
@@ -26,7 +27,7 @@ import {
 import { evaluateFitness, evaluateDetailed, computeTuningError } from './objectiveFunction';
 import { selectElite, selectMatingPairs } from './selection';
 import { performCrossover, heuristicCrossover } from './crossover';
-import { uniformMutation, gaussianSelfAdaptiveMutation } from './mutation';
+import { uniformMutation, gaussianSelfAdaptiveMutation, adaptiveLengthMutation, FrequencyError } from './mutation';
 import { genesToCuts } from '../physics/barProfile';
 import { batchComputeFitness, isWasmReady, computeFrequenciesFromGenes } from '../physics/frequencies';
 import { computeVolumePenalty, computeRoughnessPenalty } from './penalties';
@@ -171,22 +172,41 @@ export async function runEvolutionaryAlgorithm(config: EAConfig): Promise<Optimi
   const f1Priority = eaParams.f1Priority ?? 1;
   const hasLengthAdjust = (eaParams.maxLengthTrim ?? 0) > 0 || (eaParams.maxLengthExtend ?? 0) > 0;
 
+  // Report Generation 0: uncut bar baseline
+  if (onProgress) {
+    const uncutBar = createUncutBarIndividual(numCuts, bounds, bar.h0);
+    // Evaluate the uncut bar
+    const [evaluatedUncut] = batchEvaluatePopulation(
+      [uncutBar], bar, material, targetFrequencies,
+      penaltyType, penaltyWeight, eaParams.numElements, f1Priority, numCuts
+    );
+    const { computedFrequencies, errorsInCents, lengthTrim } = computeFrequenciesAndErrors(
+      evaluatedUncut.genes,
+      bar,
+      material,
+      targetFrequencies,
+      eaParams.numElements,
+      numCuts
+    );
+    onProgress({
+      generation: 0,
+      bestFitness: evaluatedUncut.fitness,
+      bestIndividual: evaluatedUncut,
+      averageFitness: evaluatedUncut.fitness,
+      computedFrequencies,
+      errorsInCents,
+      lengthTrim
+    });
+  }
+
   // Initialize population (with optional seed)
   let population = initializePopulation(eaParams.populationSize, numCuts, bounds, seedGenes);
 
   // Evaluate initial population
-  // When length adjustment is enabled, use per-individual evaluation (different bar lengths)
-  if (useWasm && !hasLengthAdjust) {
-    population = batchEvaluatePopulation(
-      population, bar, material, targetFrequencies,
-      penaltyType, penaltyWeight, eaParams.numElements, f1Priority, numCuts
-    );
-  } else {
-    population = batchEvaluatePopulation(
-      population, bar, material, targetFrequencies,
-      penaltyType, penaltyWeight, eaParams.numElements, f1Priority, numCuts
-    );
-  }
+  population = batchEvaluatePopulation(
+    population, bar, material, targetFrequencies,
+    penaltyType, penaltyWeight, eaParams.numElements, f1Priority, numCuts
+  );
 
   // Calculate percentages for different operations
   const numElite = Math.max(1, Math.floor(eaParams.populationSize * eaParams.elitismPercent / 100));
@@ -230,7 +250,20 @@ export async function runEvolutionaryAlgorithm(config: EAConfig): Promise<Optimi
     while (nextGeneration.length + newOffspring.length < eaParams.populationSize) {
       const idx = Math.floor(Math.random() * Math.min(sortedPop.length, numElite + numCrossover));
       const parent = sortedPop[idx];
-      const mutant = uniformMutation(parent, eaParams.mutationStrength, bounds);
+
+      // Use adaptive mutation if length adjustment is enabled
+      let mutant: Individual;
+      if (hasLengthAdjust) {
+        // Compute f1 error for the parent to guide length mutation
+        const parentFreqs = computeFrequenciesFromGenes(
+          parent.genes, bar, material, 1, eaParams.numElements, numCuts
+        );
+        const f1Error = parentFreqs[0] - targetFrequencies[0];
+        const freqError: FrequencyError = { f1Error };
+        mutant = adaptiveLengthMutation(parent, eaParams.mutationStrength, bounds, freqError);
+      } else {
+        mutant = uniformMutation(parent, eaParams.mutationStrength, bounds);
+      }
       newOffspring.push(mutant);
     }
 
@@ -345,6 +378,32 @@ export async function runAdaptiveEvolution(config: EAConfig): Promise<Optimizati
   const f1Priority = eaParams.f1Priority ?? 1;
   const hasLengthAdjust = (eaParams.maxLengthTrim ?? 0) > 0 || (eaParams.maxLengthExtend ?? 0) > 0;
   const numGenes = hasLengthAdjust ? numCuts * 2 + 1 : numCuts * 2;
+
+  // Report Generation 0: uncut bar baseline
+  if (onProgress) {
+    const uncutBar = createUncutBarIndividual(numCuts, bounds, bar.h0);
+    const [evaluatedUncut] = batchEvaluatePopulation(
+      [uncutBar], bar, material, targetFrequencies,
+      penaltyType, penaltyWeight, eaParams.numElements, f1Priority, numCuts
+    );
+    const { computedFrequencies, errorsInCents, lengthTrim } = computeFrequenciesAndErrors(
+      evaluatedUncut.genes,
+      bar,
+      material,
+      targetFrequencies,
+      eaParams.numElements,
+      numCuts
+    );
+    onProgress({
+      generation: 0,
+      bestFitness: evaluatedUncut.fitness,
+      bestIndividual: evaluatedUncut,
+      averageFitness: evaluatedUncut.fitness,
+      computedFrequencies,
+      errorsInCents,
+      lengthTrim
+    });
+  }
 
   // Initialize population with sigmas for self-adaptive mutation
   let population: Individual[] = initializePopulation(eaParams.populationSize, numCuts, bounds)

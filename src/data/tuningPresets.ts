@@ -2,6 +2,12 @@ import { TuningPreset } from '../types';
 
 export const TUNING_PRESETS: TuningPreset[] = [
   {
+    name: '1:2.76:5.40',
+    ratios: [1, 2.756, 5.404],
+    description: 'Natural uniform bar frequencies (no tuning needed)',
+    instrument: 'Uniform Bar'
+  },
+  {
     name: '1:4:10',
     ratios: [1, 4, 10],
     description: 'Standard marimba tuning (triple tuning)',

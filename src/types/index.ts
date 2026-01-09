@@ -155,3 +155,99 @@ export interface VariableBounds {
   maxLengthTrim: number; // Maximum trim from each end, 0 = no trimming
   maxLengthExtend: number; // Maximum extension from each end, 0 = no extension
 }
+
+// ============================================
+// Bar Range Finder Types
+// ============================================
+
+// Re-export from noteUtils for convenience
+export type { ScaleType, NoteInfo } from '../utils/noteUtils';
+
+// Result of finding optimal bar length for a single note
+export interface BarLengthResult {
+  note: {
+    name: string;
+    frequency: number;
+    midiNumber: number;
+  };
+  targetFrequency: number;      // Hz - same as note.frequency
+  optimalLength: number;        // mm
+  computedFrequency: number;    // Hz - f1 at optimal length
+  errorCents: number;           // Error in cents
+  searchIterations: number;     // Number of binary search iterations
+  selected: boolean;            // For batch optimization selection
+}
+
+// Parameters for bar range finding
+export interface BarRangeParams {
+  width: number;          // mm
+  thickness: number;      // mm
+  material: Material;
+  startNote: string;      // e.g., "F4"
+  endNote: string;        // e.g., "F5"
+  scaleType: 'chromatic' | 'natural' | 'custom';
+  customNotes?: string[]; // For custom scale type
+  minLength: number;      // mm - minimum bar length to search
+  maxLength: number;      // mm - maximum bar length to search
+  toleranceCents: number; // Acceptable frequency error in cents
+}
+
+// Current progress data during optimization
+export interface BatchProgressData {
+  generation: number;
+  bestFitness: number;
+  computedFrequencies: number[];
+  errorsInCents: number[];
+  lengthTrim?: number;
+  genes: number[];
+}
+
+// Item in batch optimization queue
+export interface BatchOptimizationItem {
+  barResult: BarLengthResult;
+  optimizationResult?: OptimizationResult;
+  status: 'pending' | 'running' | 'complete' | 'error' | 'skipped';
+  error?: string;
+  currentGeneration?: number;
+  maxGenerations?: number;
+  currentProgress?: BatchProgressData;  // Live feedback during optimization
+}
+
+// Batch optimization configuration
+export interface BatchOptimizationConfig {
+  // Bar parameters (fixed for all bars)
+  barWidth: number;          // mm
+  barThickness: number;      // mm
+  material: Material;
+
+  // Tuning parameters
+  tuningPreset: string;      // Preset name like '1:4:10'
+
+  // Optimization parameters
+  numCuts: number;
+  penaltyType: 'volume' | 'roughness' | 'none';
+  penaltyWeight: number;
+  populationSize: number;
+  maxGenerations: number;
+  targetError: number;       // % error threshold
+  f1Priority: number;
+  numElements: number;
+  minCutWidth: number;       // mm
+  maxCutWidth: number;       // mm
+  minCutDepth: number;       // mm
+  maxCutDepth: number;       // mm
+  maxLengthTrim: number;     // mm
+  maxLengthExtend: number;   // mm
+  maxCores: number;
+}
+
+// Worker messages for bar range finding
+export type BarRangeWorkerMessage =
+  | { type: 'FIND_LENGTHS'; params: BarRangeParams }
+  | { type: 'STOP' };
+
+export type BarRangeWorkerResponse =
+  | { type: 'FIND_PROGRESS'; note: string; index: number; total: number }
+  | { type: 'FIND_COMPLETE'; results: BarLengthResult[] }
+  | { type: 'ERROR'; message: string }
+  | { type: 'STOPPED' };

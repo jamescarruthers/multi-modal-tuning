@@ -150,18 +150,24 @@ export function generateElementHeights(
 
 /**
  * Convert genes array to cuts array
- * Genes format: [lambda_1, h_1, lambda_2, h_2, ...]
+ * Genes format: [lambda_1, h_1, lambda_2, h_2, ..., lengthAdjust?]
+ * Note: genes may have an optional trailing lengthAdjust value that should be ignored
  *
  * @param genes - Flat array of optimization variables
  * @returns Array of Cut objects
  */
 export function genesToCuts(genes: number[]): Cut[] {
   const cuts: Cut[] = [];
-  for (let i = 0; i < genes.length; i += 2) {
-    cuts.push({
-      lambda: genes[i],
-      h: genes[i + 1]
-    });
+  // Process pairs of genes (lambda, h) - stop before incomplete pair
+  // This handles the optional trailing lengthAdjust gene
+  for (let i = 0; i + 1 < genes.length; i += 2) {
+    const lambda = genes[i];
+    const h = genes[i + 1];
+    // Only add valid cuts (skip any NaN or undefined values)
+    if (typeof lambda === 'number' && typeof h === 'number' &&
+        !isNaN(lambda) && !isNaN(h)) {
+      cuts.push({ lambda, h });
+    }
   }
   // Sort by lambda descending (largest first)
   return cuts.sort((a, b) => b.lambda - a.lambda);
