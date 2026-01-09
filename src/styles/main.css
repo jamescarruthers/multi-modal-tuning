@@ -1965,8 +1965,10 @@ body {
 .tuner-window-error {
   margin-left: auto;
   font-family: 'SF Mono', Monaco, 'Consolas', monospace;
-  font-size: 16px;
-  font-weight: 600;
+  font-size: 20px;
+  font-weight: 700;
+  min-width: 70px;
+  text-align: center;
 }
 
 .tuner-canvas-container {

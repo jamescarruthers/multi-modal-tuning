@@ -772,16 +772,6 @@ export function TunerTab({
           />
         ))}
       </div>
-
-      {/* Instructions when not listening */}
-      {!isListening && !error && (
-        <div className="tuner-instructions">
-          <h3>Spectrum Analyzer Tuner</h3>
-          <p>Click "Start Tuner" to begin analyzing audio from your microphone.</p>
-          <p>Each window shows a frequency range of +/- 100 cents around the target frequency.</p>
-          <p>Strike your bar and watch the spectrum to see how close it is to the target frequencies.</p>
-        </div>
-      )}
     </div>
   );
 }
