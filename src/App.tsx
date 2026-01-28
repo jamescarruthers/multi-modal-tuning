@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { SharedSettingsPanel, OptimizationSettings } from './components/SharedSettingsPanel';
 import { SingleBarOptimizer } from './components/SingleBarOptimizer';
 import { BarRangeFinder } from './components/BarRangeFinder';
@@ -6,6 +6,7 @@ import { TunerTab } from './components/TunerTab';
 import { TabSwitcher, AppMode } from './components/TabSwitcher';
 import { BatchOptimizationItem } from './types';
 import { encodeGenes } from './optimization/geneCodec';
+import { MATERIALS, getShearModulus } from './data/materials';
 import './styles/main.css';
 
 function App() {
@@ -19,11 +20,30 @@ function App() {
 
   // Material
   const [selectedMaterial, setSelectedMaterial] = useState('aluminum');
+  const previousMaterialRef = useRef('aluminum');
 
   // Custom material properties (used when selectedMaterial === 'custom')
   const [customE, setCustomE] = useState(10e9);       // Pa (default 10 GPa)
   const [customRho, setCustomRho] = useState(1000);   // kg/m³
   const [customNu, setCustomNu] = useState(0.33);     // Poisson's ratio
+  const [customG, setCustomG] = useState(1e9);        // Pa (default 1 GPa)
+
+  // Handle material change - copy values from previous material when switching to custom
+  const handleMaterialChange = useCallback((newMaterial: string) => {
+    if (newMaterial === 'custom' && previousMaterialRef.current !== 'custom') {
+      // Copy values from previous material to custom
+      const prevMat = MATERIALS[previousMaterialRef.current];
+      if (prevMat) {
+        setCustomE(prevMat.E);
+        setCustomRho(prevMat.rho);
+        setCustomNu(prevMat.nu);
+        // Use explicit G if available, otherwise calculate from E and nu
+        setCustomG(getShearModulus(prevMat.E, prevMat.nu, prevMat.G));
+      }
+    }
+    previousMaterialRef.current = newMaterial;
+    setSelectedMaterial(newMaterial);
+  }, []);
 
   // Tuning
   const [selectedPreset, setSelectedPreset] = useState('1:4:10');
@@ -117,13 +137,15 @@ function App() {
           onBarWidthChange={setBarWidth}
           onBarThicknessChange={setBarThickness}
           selectedMaterial={selectedMaterial}
-          onMaterialChange={setSelectedMaterial}
+          onMaterialChange={handleMaterialChange}
           customE={customE}
           customRho={customRho}
           customNu={customNu}
+          customG={customG}
           onCustomEChange={setCustomE}
           onCustomRhoChange={setCustomRho}
           onCustomNuChange={setCustomNu}
+          onCustomGChange={setCustomG}
           numCuts={numCuts}
           penaltyType={penaltyType}
           penaltyWeight={penaltyWeight}
@@ -175,6 +197,7 @@ function App() {
             customE={customE}
             customRho={customRho}
             customNu={customNu}
+            customG={customG}
             tuningPreset={selectedPreset}
             onTuningPresetChange={setSelectedPreset}
             fundamentalFrequency={fundamentalFrequency}
@@ -195,6 +218,7 @@ function App() {
             customE={customE}
             customRho={customRho}
             customNu={customNu}
+            customG={customG}
             optimizationSettings={optimizationSettings}
             onLoadBar={handleLoadFromBatch}
             onAddToBatch={handleAddToBatch}

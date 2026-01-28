@@ -27,6 +27,7 @@ interface BarRangeFinderProps {
   customE?: number;
   customRho?: number;
   customNu?: number;
+  customG?: number;
   optimizationSettings: OptimizationSettings;
   onLoadBar?: (item: BatchOptimizationItem) => void;
   onAddToBatch?: (items: BatchOptimizationItem[]) => void;
@@ -39,12 +40,13 @@ export function BarRangeFinder({
   customE,
   customRho,
   customNu,
+  customG,
   optimizationSettings,
   onLoadBar,
   onAddToBatch
 }: BarRangeFinderProps) {
   const material = selectedMaterial === 'custom' && customE && customRho && customNu
-    ? { name: 'Custom Material', E: customE, rho: customRho, nu: customNu, category: 'custom' as const }
+    ? { name: 'Custom Material', E: customE, rho: customRho, nu: customNu, G: customG, category: 'custom' as const }
     : MATERIALS[selectedMaterial];
 
   // Note range state

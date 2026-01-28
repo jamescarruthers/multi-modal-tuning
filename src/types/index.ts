@@ -4,6 +4,7 @@ export interface Material {
   E: number;        // Young's modulus (Pa)
   rho: number;      // Density (kg/m^3)
   nu: number;       // Poisson's ratio
+  G?: number;       // Shear modulus (Pa) - optional, calculated from E & nu if not provided
   category: 'metal' | 'wood' | 'custom';
 }
 

@@ -33,6 +33,7 @@ export interface GlobalMatrices {
  * @param E - Young's modulus (Pa)
  * @param rho - Density (kg/m^3)
  * @param nu - Poisson's ratio
+ * @param materialG - Optional explicit shear modulus (Pa) for orthotropic materials like wood
  * @returns Global K and M matrices
  */
 export function assembleGlobalMatrices(
@@ -41,7 +42,8 @@ export function assembleGlobalMatrices(
   b: number,
   E: number,
   rho: number,
-  nu: number
+  nu: number,
+  materialG?: number
 ): GlobalMatrices {
   const Ne = elementHeights.length;  // Number of elements
   const numNodes = Ne + 1;           // Number of nodes
@@ -53,7 +55,7 @@ export function assembleGlobalMatrices(
 
   // Compute all element matrices
   const elementMatrices = computeAllElementMatrices(
-    elementHeights, Le, b, E, rho, nu
+    elementHeights, Le, b, E, rho, nu, materialG
   );
 
   // Assemble each element into global matrices
@@ -113,7 +115,8 @@ export function assembleFromCuts(
     bar.b,
     material.E,
     material.rho,
-    material.nu
+    material.nu,
+    material.G
   );
 }
 

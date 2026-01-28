@@ -49,9 +49,14 @@ interface SharedSettingsPanelProps {
   customE?: number;           // Young's modulus in Pa
   customRho?: number;         // Density in kg/m³
   customNu?: number;          // Poisson's ratio
+  customG?: number;           // Shear modulus in Pa
   onCustomEChange?: (value: number) => void;
   onCustomRhoChange?: (value: number) => void;
   onCustomNuChange?: (value: number) => void;
+  onCustomGChange?: (value: number) => void;
+
+  // Callback for when material changes - used to copy values when switching to custom
+  previousMaterial?: string;
 
   // Optimization params
   numCuts: number;
@@ -228,6 +233,23 @@ export function SharedSettingsPanel(props: SharedSettingsPanelProps) {
                 disabled={isDisabled}
               />
             </div>
+            <div className="form-group">
+              <label className="form-label">Shear Modulus (G)</label>
+              <div className="input-unit">
+                <input
+                  type="number"
+                  className="form-input"
+                  value={props.customG !== undefined ? props.customG / 1e9 : 1}
+                  onChange={e => props.onCustomGChange?.(parseFloat(e.target.value) * 1e9 || 1e9)}
+                  min={0.01}
+                  max={100}
+                  step={0.01}
+                  disabled={isDisabled}
+                />
+                <span>GPa</span>
+              </div>
+              <div className="form-hint">For wood, G ≈ 0.06-0.08 × E</div>
+            </div>
           </div>
         ) : material && (
           <div className="material-props">
@@ -242,6 +264,10 @@ export function SharedSettingsPanel(props: SharedSettingsPanelProps) {
             <div className="material-prop">
               <div className="label">ν</div>
               <div className="value">{material.nu}</div>
+            </div>
+            <div className="material-prop">
+              <div className="label">G</div>
+              <div className="value">{material.G ? (material.G / 1e9).toFixed(2) : (material.E / (2 * (1 + material.nu)) / 1e9).toFixed(1)} GPa</div>
             </div>
           </div>
         )}
