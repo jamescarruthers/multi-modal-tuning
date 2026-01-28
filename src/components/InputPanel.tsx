@@ -498,21 +498,21 @@ export function InputPanel(props: InputPanelProps) {
         <div className="slider-group">
           <div className="slider-header">
             <span className="slider-label">Min Step Width</span>
-            <span className="slider-value">{props.minCutWidth} mm</span>
+            <span className="slider-value">{props.minCutWidth === 0 ? 'No limit' : `${props.minCutWidth} mm`}</span>
           </div>
           <input
             type="range"
             className="slider"
-            min={0.5}
+            min={0}
             max={20}
             step={0.5}
             value={props.minCutWidth}
             onChange={e => props.onMinCutWidthChange(parseFloat(e.target.value))}
-            title="Minimum step width"
+            title="Minimum step width (0 = no limit)"
             aria-label="Minimum Step Width"
           />
           <div className="slider-hint">
-            Min width of each tier/step
+            Min width of each tier/step (0 = no limit)
           </div>
         </div>
 
