@@ -53,11 +53,14 @@ export const MATERIALS: Record<string, Material> = {
   },
 
   // Premium tonewoods for marimbas/xylophones
+  // Note: Wood G values are explicit because wood is orthotropic.
+  // G/E ratio for hardwoods is typically 0.06-0.08 (vs ~0.38 for isotropic materials)
   rosewood: {
     name: 'Honduran Rosewood',
     E: 12.5e9,
     rho: 850,
     nu: 0.37,
+    G: 0.81e9,       // ~0.065 * E
     category: 'wood'
   },
   africanRosewood: {
@@ -65,6 +68,7 @@ export const MATERIALS: Record<string, Material> = {
     E: 15.8e9,
     rho: 890,
     nu: 0.36,
+    G: 1.03e9,       // ~0.065 * E
     category: 'wood'
   },
   padauk: {
@@ -72,6 +76,7 @@ export const MATERIALS: Record<string, Material> = {
     E: 11.7e9,
     rho: 750,
     nu: 0.35,
+    G: 0.76e9,       // ~0.065 * E
     category: 'wood'
   },
   sapele: {
@@ -79,6 +84,7 @@ export const MATERIALS: Record<string, Material> = {
     E: 12.0e9,
     rho: 640,
     nu: 0.35,
+    G: 0.78e9,       // ~0.065 * E
     category: 'wood'
   },
   bubinga: {
@@ -86,6 +92,7 @@ export const MATERIALS: Record<string, Material> = {
     E: 15.8e9,
     rho: 890,
     nu: 0.36,
+    G: 1.03e9,       // ~0.065 * E
     category: 'wood'
   },
 
@@ -95,6 +102,7 @@ export const MATERIALS: Record<string, Material> = {
     E: 12.6e9,
     rho: 705,
     nu: 0.35,
+    G: 0.82e9,       // ~0.065 * E
     category: 'wood'
   },
   purpleheart: {
@@ -102,6 +110,7 @@ export const MATERIALS: Record<string, Material> = {
     E: 17.0e9,
     rho: 880,
     nu: 0.35,
+    G: 1.11e9,       // ~0.065 * E
     category: 'wood'
   },
   wenge: {
@@ -109,6 +118,7 @@ export const MATERIALS: Record<string, Material> = {
     E: 14.0e9,
     rho: 870,
     nu: 0.35,
+    G: 0.91e9,       // ~0.065 * E
     category: 'wood'
   },
   bocote: {
@@ -116,6 +126,7 @@ export const MATERIALS: Record<string, Material> = {
     E: 14.1e9,
     rho: 930,
     nu: 0.36,
+    G: 0.92e9,       // ~0.065 * E
     category: 'wood'
   },
   zebrawood: {
@@ -123,6 +134,7 @@ export const MATERIALS: Record<string, Material> = {
     E: 15.2e9,
     rho: 780,
     nu: 0.35,
+    G: 0.99e9,       // ~0.065 * E
     category: 'wood'
   },
   cocobolo: {
@@ -130,6 +142,7 @@ export const MATERIALS: Record<string, Material> = {
     E: 14.1e9,
     rho: 1100,
     nu: 0.36,
+    G: 0.92e9,       // ~0.065 * E
     category: 'wood'
   },
   ebony: {
@@ -137,6 +150,7 @@ export const MATERIALS: Record<string, Material> = {
     E: 17.4e9,
     rho: 1050,
     nu: 0.38,
+    G: 1.13e9,       // ~0.065 * E
     category: 'wood'
   },
   teak: {
@@ -144,6 +158,7 @@ export const MATERIALS: Record<string, Material> = {
     E: 12.3e9,
     rho: 630,
     nu: 0.35,
+    G: 0.80e9,       // ~0.065 * E
     category: 'wood'
   },
 
@@ -181,7 +196,17 @@ export function getMaterialsByCategory(): { metals: [string, Material][]; woods:
   };
 }
 
-// Calculate shear modulus from Young's modulus and Poisson's ratio
+// Get shear modulus - use explicit G if provided, otherwise calculate from E and nu (isotropic)
+export function getShearModulus(E: number, nu: number, G?: number): number {
+  if (G !== undefined) {
+    return G;
+  }
+  // Isotropic formula (valid for metals, not accurate for wood)
+  return E / (2 * (1 + nu));
+}
+
+// Calculate shear modulus from Young's modulus and Poisson's ratio (isotropic formula)
+// Kept for backwards compatibility
 export function calculateShearModulus(E: number, nu: number): number {
   return E / (2 * (1 + nu));
 }

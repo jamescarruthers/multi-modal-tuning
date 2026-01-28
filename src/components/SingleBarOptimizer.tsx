@@ -88,6 +88,7 @@ interface SingleBarOptimizerProps {
   customE?: number;
   customRho?: number;
   customNu?: number;
+  customG?: number;
   tuningPreset: string;
   onTuningPresetChange: (preset: string) => void;
   fundamentalFrequency: number;
@@ -110,6 +111,7 @@ export function SingleBarOptimizer({
   customE,
   customRho,
   customNu,
+  customG,
   tuningPreset,
   onTuningPresetChange,
   fundamentalFrequency,
@@ -178,7 +180,7 @@ export function SingleBarOptimizer({
 
   const targetFreqs = getTargetFrequencies();
   const material = selectedMaterial === 'custom' && customE && customRho && customNu
-    ? { name: 'Custom Material', E: customE, rho: customRho, nu: customNu, category: 'custom' as const }
+    ? { name: 'Custom Material', E: customE, rho: customRho, nu: customNu, G: customG, category: 'custom' as const }
     : MATERIALS[selectedMaterial];
 
   // Note selection handlers

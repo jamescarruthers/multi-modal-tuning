@@ -10,7 +10,7 @@
  */
 
 import { ElementMatrices } from '../types';
-import { KAPPA, calculateShearModulus } from '../data/materials';
+import { KAPPA, getShearModulus } from '../data/materials';
 
 /**
  * Compute Timoshenko beam element stiffness and mass matrices
@@ -21,6 +21,7 @@ import { KAPPA, calculateShearModulus } from '../data/materials';
  * @param E - Young's modulus (Pa)
  * @param rho - Density (kg/m^3)
  * @param nu - Poisson's ratio
+ * @param materialG - Optional explicit shear modulus (Pa) - important for orthotropic materials like wood
  * @returns Object containing 4x4 Ke (stiffness) and Me (mass) matrices
  */
 export function computeTimoshenkoElement(
@@ -29,12 +30,13 @@ export function computeTimoshenkoElement(
   b: number,
   E: number,
   rho: number,
-  nu: number
+  nu: number,
+  materialG?: number
 ): ElementMatrices {
   // Cross-sectional properties
   const A = b * H;                    // Cross-sectional area
   const I = (b * H * H * H) / 12;     // Second moment of area
-  const G = calculateShearModulus(E, nu);  // Shear modulus
+  const G = getShearModulus(E, nu, materialG);  // Shear modulus (explicit or calculated)
   const kappa = KAPPA;                // Shear correction factor (5/6)
 
   // Timoshenko shear parameter
@@ -113,6 +115,7 @@ export function computeTimoshenkoElement(
  * @param E - Young's modulus (Pa)
  * @param rho - Density (kg/m^3)
  * @param nu - Poisson's ratio
+ * @param materialG - Optional explicit shear modulus (Pa)
  * @returns Array of element matrices
  */
 export function computeAllElementMatrices(
@@ -121,7 +124,8 @@ export function computeAllElementMatrices(
   b: number,
   E: number,
   rho: number,
-  nu: number
+  nu: number,
+  materialG?: number
 ): ElementMatrices[] {
   // Cache computed matrices for identical heights to improve performance
   const cache = new Map<number, ElementMatrices>();
@@ -134,7 +138,7 @@ export function computeAllElementMatrices(
       return cache.get(roundedH)!;
     }
 
-    const matrices = computeTimoshenkoElement(Le, H, b, E, rho, nu);
+    const matrices = computeTimoshenkoElement(Le, H, b, E, rho, nu, materialG);
     cache.set(roundedH, matrices);
     return matrices;
   });

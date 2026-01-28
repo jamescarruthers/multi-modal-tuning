@@ -144,7 +144,7 @@ body {
 /* Material Properties Display */
 .material-props {
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-columns: 1fr 1fr 1fr 1fr;
   gap: 8px;
   margin-top: 8px;
   padding: 8px;
