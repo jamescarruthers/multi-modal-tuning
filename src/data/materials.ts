@@ -154,6 +154,15 @@ export const MATERIALS: Record<string, Material> = {
     rho: 1800,
     nu: 0.30,
     category: 'metal'  // grouped with metals for UI
+  },
+
+  // Custom material - user-defined properties
+  custom: {
+    name: 'Custom Material',
+    E: 10.0e9,        // Default: 10 GPa
+    rho: 1000,        // Default: 1000 kg/m³
+    nu: 0.33,         // Default: 0.33
+    category: 'custom'
   }
 };
 
@@ -163,11 +172,12 @@ export function getMaterial(key: string): Material | undefined {
 }
 
 // Get all materials grouped by category
-export function getMaterialsByCategory(): { metals: [string, Material][]; woods: [string, Material][] } {
+export function getMaterialsByCategory(): { metals: [string, Material][]; woods: [string, Material][]; custom: [string, Material][] } {
   const entries = Object.entries(MATERIALS);
   return {
     metals: entries.filter(([, m]) => m.category === 'metal'),
-    woods: entries.filter(([, m]) => m.category === 'wood')
+    woods: entries.filter(([, m]) => m.category === 'wood'),
+    custom: entries.filter(([, m]) => m.category === 'custom')
   };
 }
 

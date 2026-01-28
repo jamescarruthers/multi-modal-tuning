@@ -4,7 +4,7 @@ export interface Material {
   E: number;        // Young's modulus (Pa)
   rho: number;      // Density (kg/m^3)
   nu: number;       // Poisson's ratio
-  category: 'metal' | 'wood';
+  category: 'metal' | 'wood' | 'custom';
 }
 
 // Bar geometry

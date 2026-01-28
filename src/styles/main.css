@@ -165,6 +165,28 @@ body {
   font-weight: 500;
 }
 
+/* Custom Material Properties Editable */
+.material-props-editable {
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.material-props-editable .form-group {
+  margin-bottom: 0;
+}
+
+.material-props-editable .form-label {
+  font-size: 11px;
+  margin-bottom: 2px;
+}
+
+.material-props-editable .form-input {
+  padding: 4px 8px;
+  font-size: 13px;
+}
+
 /* Tuning Selector */
 .tuning-mode-toggle {
   display: flex;

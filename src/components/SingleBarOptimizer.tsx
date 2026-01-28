@@ -84,6 +84,10 @@ interface SingleBarOptimizerProps {
   barThickness: number;
   onBarLengthChange: (length: number) => void;
   selectedMaterial: string;
+  // Custom material properties (used when selectedMaterial === 'custom')
+  customE?: number;
+  customRho?: number;
+  customNu?: number;
   tuningPreset: string;
   onTuningPresetChange: (preset: string) => void;
   fundamentalFrequency: number;
@@ -103,6 +107,9 @@ export function SingleBarOptimizer({
   barThickness,
   onBarLengthChange,
   selectedMaterial,
+  customE,
+  customRho,
+  customNu,
   tuningPreset,
   onTuningPresetChange,
   fundamentalFrequency,
@@ -170,7 +177,9 @@ export function SingleBarOptimizer({
   }, [tuningPreset, fundamentalFrequency]);
 
   const targetFreqs = getTargetFrequencies();
-  const material = MATERIALS[selectedMaterial];
+  const material = selectedMaterial === 'custom' && customE && customRho && customNu
+    ? { name: 'Custom Material', E: customE, rho: customRho, nu: customNu, category: 'custom' as const }
+    : MATERIALS[selectedMaterial];
 
   // Note selection handlers
   const handleNoteSelect = (note: string, freq: number) => {
