@@ -93,8 +93,10 @@ async function startOptimization(params: OptimizationParams): Promise<void> {
       material: params.material,
       targetFrequencies: params.targetFrequencies,
       numCuts: params.numCuts,
-      penaltyType: params.penaltyType,
-      penaltyWeight: params.penaltyWeight,
+      useVolumePenalty: params.useVolumePenalty,
+      volumeWeight: params.volumeWeight,
+      useRoughnessPenalty: params.useRoughnessPenalty,
+      roughnessWeight: params.roughnessWeight,
       eaParams: params.eaParams,
       seedGenes: params.seedGenes,
       onProgress: (update: ProgressUpdate) => {

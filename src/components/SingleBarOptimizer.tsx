@@ -279,8 +279,10 @@ export function SingleBarOptimizer({
       material,
       targetFrequencies: targetFreqs,
       numCuts: optimizationSettings.numCuts,
-      penaltyType: optimizationSettings.penaltyType,
-      penaltyWeight: optimizationSettings.penaltyWeight,
+      useVolumePenalty: optimizationSettings.useVolumePenalty,
+      volumeWeight: optimizationSettings.volumeWeight,
+      useRoughnessPenalty: optimizationSettings.useRoughnessPenalty,
+      roughnessWeight: optimizationSettings.roughnessWeight,
       eaParams: {
         populationSize: optimizationSettings.populationSize,
         elitismPercent: 10,

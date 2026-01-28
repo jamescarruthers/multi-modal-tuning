@@ -124,6 +124,29 @@ export function combinedObjectiveRoughness(
 }
 
 /**
+ * Combined objective function with both volume and roughness penalties
+ *
+ * E = (1 - alpha_v - alpha_r) * epsilon + alpha_v * V + alpha_r * S
+ *
+ * @param tuningError - Tuning error epsilon (%)
+ * @param volumePenalty - Volume penalty V (%)
+ * @param roughnessPenalty - Roughness penalty S (%)
+ * @param alphaV - Volume weighting factor (0-1)
+ * @param alphaR - Roughness weighting factor (0-1)
+ * @returns Combined objective value
+ */
+export function combinedObjectiveBoth(
+  tuningError: number,
+  volumePenalty: number,
+  roughnessPenalty: number,
+  alphaV: number,
+  alphaR: number
+): number {
+  const tuningWeight = Math.max(0, 1 - alphaV - alphaR);
+  return tuningWeight * tuningError + alphaV * volumePenalty + alphaR * roughnessPenalty;
+}
+
+/**
  * Evaluate fitness of an individual
  * Lower fitness is better (we're minimizing)
  *
@@ -131,8 +154,10 @@ export function combinedObjectiveRoughness(
  * @param bar - Bar parameters
  * @param material - Material properties
  * @param targetFreq - Target frequencies
- * @param penaltyType - Type of penalty ('volume', 'roughness', or 'none')
- * @param alpha - Penalty weight (0-1)
+ * @param useVolumePenalty - Whether to apply volume penalty
+ * @param volumeWeight - Volume penalty weight (0-1)
+ * @param useRoughnessPenalty - Whether to apply roughness penalty
+ * @param roughnessWeight - Roughness penalty weight (0-1)
  * @param numElements - Number of FEM elements
  * @param f1Priority - Weight multiplier for f1 (default 1 = equal)
  * @returns Fitness value (lower is better)
@@ -142,8 +167,10 @@ export function evaluateFitness(
   bar: BarParameters,
   material: Material,
   targetFreq: number[],
-  penaltyType: 'volume' | 'roughness' | 'none',
-  alpha: number,
+  useVolumePenalty: boolean,
+  volumeWeight: number,
+  useRoughnessPenalty: boolean,
+  roughnessWeight: number,
   numElements: number = 150,
   f1Priority: number = 1
 ): number {
@@ -162,22 +189,24 @@ export function evaluateFitness(
     // Compute tuning error (with f1 priority weighting)
     const tuningError = computeTuningError(computedFreq, targetFreq, f1Priority);
 
-    // If no penalty, return tuning error
-    if (penaltyType === 'none' || alpha === 0) {
+    // Determine effective weights (only apply if enabled)
+    const effectiveVolumeWeight = useVolumePenalty ? volumeWeight : 0;
+    const effectiveRoughnessWeight = useRoughnessPenalty ? roughnessWeight : 0;
+
+    // If no penalties, return tuning error
+    if (effectiveVolumeWeight === 0 && effectiveRoughnessWeight === 0) {
       return tuningError;
     }
 
     // Convert genes to cuts for penalty calculation
     const cuts = genesToCuts(genes);
 
-    // Compute penalty based on type
-    if (penaltyType === 'volume') {
-      const volumePenalty = computeVolumePenalty(cuts, bar.L, bar.h0);
-      return combinedObjectiveVolume(tuningError, volumePenalty, alpha);
-    } else {
-      const roughnessPenalty = computeRoughnessPenalty(cuts, bar.h0);
-      return combinedObjectiveRoughness(tuningError, roughnessPenalty, alpha);
-    }
+    // Compute penalties as needed
+    const volumePenalty = effectiveVolumeWeight > 0 ? computeVolumePenalty(cuts, bar.L, bar.h0) : 0;
+    const roughnessPenalty = effectiveRoughnessWeight > 0 ? computeRoughnessPenalty(cuts, bar.h0) : 0;
+
+    // Combine using the generalized formula
+    return combinedObjectiveBoth(tuningError, volumePenalty, roughnessPenalty, effectiveVolumeWeight, effectiveRoughnessWeight);
   } catch {
     // Return high fitness if computation fails
     return 1e10;
@@ -191,8 +220,10 @@ export function evaluateFitness(
  * @param bar - Bar parameters
  * @param material - Material properties
  * @param targetFreq - Target frequencies
- * @param penaltyType - Type of penalty
- * @param alpha - Penalty weight
+ * @param useVolumePenalty - Whether to apply volume penalty
+ * @param volumeWeight - Volume penalty weight
+ * @param useRoughnessPenalty - Whether to apply roughness penalty
+ * @param roughnessWeight - Roughness penalty weight
  * @param numElements - Number of FEM elements
  * @returns Population with updated fitness values
  */
@@ -201,13 +232,15 @@ export function evaluatePopulation(
   bar: BarParameters,
   material: Material,
   targetFreq: number[],
-  penaltyType: 'volume' | 'roughness' | 'none',
-  alpha: number,
+  useVolumePenalty: boolean,
+  volumeWeight: number,
+  useRoughnessPenalty: boolean,
+  roughnessWeight: number,
   numElements: number = 150
 ): Individual[] {
   return population.map(ind => ({
     ...ind,
-    fitness: evaluateFitness(ind, bar, material, targetFreq, penaltyType, alpha, numElements)
+    fitness: evaluateFitness(ind, bar, material, targetFreq, useVolumePenalty, volumeWeight, useRoughnessPenalty, roughnessWeight, numElements)
   }));
 }
 
@@ -231,8 +264,10 @@ export function evaluateDetailed(
   bar: BarParameters,
   material: Material,
   targetFreq: number[],
-  penaltyType: 'volume' | 'roughness' | 'none',
-  alpha: number,
+  useVolumePenalty: boolean,
+  volumeWeight: number,
+  useRoughnessPenalty: boolean,
+  roughnessWeight: number,
   numElements: number = 150
 ): DetailedEvaluation {
   const cuts = genesToCuts(genes);
@@ -249,17 +284,22 @@ export function evaluateDetailed(
   // Compute tuning error
   const tuningError = computeTuningError(computedFrequencies, targetFreq);
 
-  // Compute penalties
+  // Compute penalties (always compute for display purposes)
   const volumePenalty = computeVolumePenalty(cuts, bar.L, bar.h0);
   const roughnessPenalty = computeRoughnessPenalty(cuts, bar.h0);
 
+  // Determine effective weights
+  const effectiveVolumeWeight = useVolumePenalty ? volumeWeight : 0;
+  const effectiveRoughnessWeight = useRoughnessPenalty ? roughnessWeight : 0;
+
   // Compute combined fitness
-  let combinedFitness = tuningError;
-  if (penaltyType === 'volume' && alpha > 0) {
-    combinedFitness = combinedObjectiveVolume(tuningError, volumePenalty, alpha);
-  } else if (penaltyType === 'roughness' && alpha > 0) {
-    combinedFitness = combinedObjectiveRoughness(tuningError, roughnessPenalty, alpha);
-  }
+  const combinedFitness = combinedObjectiveBoth(
+    tuningError,
+    volumePenalty,
+    roughnessPenalty,
+    effectiveVolumeWeight,
+    effectiveRoughnessWeight
+  );
 
   // Compute cents errors
   const centsErrors = computedFrequencies.map((comp, i) => {

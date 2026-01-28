@@ -104,8 +104,10 @@ export interface OptimizationParams {
   material: Material;
   targetFrequencies: number[];
   numCuts: number;
-  penaltyType: 'volume' | 'roughness' | 'none';
-  penaltyWeight: number;      // alpha (0-1)
+  useVolumePenalty: boolean;
+  volumeWeight: number;       // alpha_v (0-1)
+  useRoughnessPenalty: boolean;
+  roughnessWeight: number;    // alpha_r (0-1)
   eaParams: EAParameters;
   seedGenes?: number[];       // Optional seed genes to initialize population
 }
@@ -126,8 +128,10 @@ export interface AppState {
 
   // Optimization parameters
   numCuts: number;
-  penaltyType: 'volume' | 'roughness' | 'none';
-  penaltyWeight: number;
+  useVolumePenalty: boolean;
+  volumeWeight: number;
+  useRoughnessPenalty: boolean;
+  roughnessWeight: number;
   populationSize: number;
   maxGenerations: number;
 
@@ -226,8 +230,10 @@ export interface BatchOptimizationConfig {
 
   // Optimization parameters
   numCuts: number;
-  penaltyType: 'volume' | 'roughness' | 'none';
-  penaltyWeight: number;
+  useVolumePenalty: boolean;
+  volumeWeight: number;
+  useRoughnessPenalty: boolean;
+  roughnessWeight: number;
   populationSize: number;
   maxGenerations: number;
   targetError: number;       // % error threshold

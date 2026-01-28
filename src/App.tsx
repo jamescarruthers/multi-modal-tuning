@@ -51,8 +51,10 @@ function App() {
 
   // Optimization params
   const [numCuts, setNumCuts] = useState(3);
-  const [penaltyType, setPenaltyType] = useState<'volume' | 'roughness' | 'none'>('volume');
-  const [penaltyWeight, setPenaltyWeight] = useState(0.05);
+  const [useVolumePenalty, setUseVolumePenalty] = useState(true);
+  const [volumeWeight, setVolumeWeight] = useState(0.05);
+  const [useRoughnessPenalty, setUseRoughnessPenalty] = useState(false);
+  const [roughnessWeight, setRoughnessWeight] = useState(0.05);
   const [populationSize, setPopulationSize] = useState(50);
   const [maxGenerations, setMaxGenerations] = useState(100);
   const [f1Priority, setF1Priority] = useState(2);
@@ -77,8 +79,10 @@ function App() {
   const optimizationSettings: OptimizationSettings = {
     tuningPreset: selectedPreset,
     numCuts,
-    penaltyType,
-    penaltyWeight,
+    useVolumePenalty,
+    volumeWeight,
+    useRoughnessPenalty,
+    roughnessWeight,
     populationSize,
     maxGenerations,
     targetError,
@@ -147,8 +151,10 @@ function App() {
           onCustomNuChange={setCustomNu}
           onCustomGChange={setCustomG}
           numCuts={numCuts}
-          penaltyType={penaltyType}
-          penaltyWeight={penaltyWeight}
+          useVolumePenalty={useVolumePenalty}
+          volumeWeight={volumeWeight}
+          useRoughnessPenalty={useRoughnessPenalty}
+          roughnessWeight={roughnessWeight}
           populationSize={populationSize}
           maxGenerations={maxGenerations}
           f1Priority={f1Priority}
@@ -163,8 +169,10 @@ function App() {
           targetError={targetError}
           seedGeneCode={seedGeneCode}
           onNumCutsChange={setNumCuts}
-          onPenaltyTypeChange={setPenaltyType}
-          onPenaltyWeightChange={setPenaltyWeight}
+          onUseVolumePenaltyChange={setUseVolumePenalty}
+          onVolumeWeightChange={setVolumeWeight}
+          onUseRoughnessPenaltyChange={setUseRoughnessPenalty}
+          onRoughnessWeightChange={setRoughnessWeight}
           onPopulationSizeChange={setPopulationSize}
           onMaxGenerationsChange={setMaxGenerations}
           onF1PriorityChange={setF1Priority}
