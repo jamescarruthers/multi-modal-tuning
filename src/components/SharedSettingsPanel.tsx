@@ -45,6 +45,14 @@ interface SharedSettingsPanelProps {
   selectedMaterial: string;
   onMaterialChange: (key: string) => void;
 
+  // Custom material properties (used when selectedMaterial === 'custom')
+  customE?: number;           // Young's modulus in Pa
+  customRho?: number;         // Density in kg/m³
+  customNu?: number;          // Poisson's ratio
+  onCustomEChange?: (value: number) => void;
+  onCustomRhoChange?: (value: number) => void;
+  onCustomNuChange?: (value: number) => void;
+
   // Optimization params
   numCuts: number;
   penaltyType: 'volume' | 'roughness' | 'none';
@@ -96,8 +104,9 @@ interface SharedSettingsPanelProps {
 }
 
 export function SharedSettingsPanel(props: SharedSettingsPanelProps) {
-  const { metals, woods } = getMaterialsByCategory();
+  const { metals, woods, custom } = getMaterialsByCategory();
   const material = MATERIALS[props.selectedMaterial];
+  const isCustomMaterial = props.selectedMaterial === 'custom';
 
   // All controls disabled when running
   const isDisabled = props.disabled ?? false;
@@ -166,8 +175,61 @@ export function SharedSettingsPanel(props: SharedSettingsPanelProps) {
               <option key={key} value={key}>{mat.name}</option>
             ))}
           </optgroup>
+          <optgroup label="Custom">
+            {custom.map(([key, mat]) => (
+              <option key={key} value={key}>{mat.name}</option>
+            ))}
+          </optgroup>
         </select>
-        {material && (
+        {isCustomMaterial ? (
+          <div className="material-props-editable">
+            <div className="form-group">
+              <label className="form-label">Young's Modulus (E)</label>
+              <div className="input-unit">
+                <input
+                  type="number"
+                  className="form-input"
+                  value={props.customE !== undefined ? props.customE / 1e9 : 10}
+                  onChange={e => props.onCustomEChange?.(parseFloat(e.target.value) * 1e9 || 10e9)}
+                  min={0.1}
+                  max={500}
+                  step={0.1}
+                  disabled={isDisabled}
+                />
+                <span>GPa</span>
+              </div>
+            </div>
+            <div className="form-group">
+              <label className="form-label">Density (ρ)</label>
+              <div className="input-unit">
+                <input
+                  type="number"
+                  className="form-input"
+                  value={props.customRho ?? 1000}
+                  onChange={e => props.onCustomRhoChange?.(parseFloat(e.target.value) || 1000)}
+                  min={100}
+                  max={20000}
+                  step={10}
+                  disabled={isDisabled}
+                />
+                <span>kg/m³</span>
+              </div>
+            </div>
+            <div className="form-group">
+              <label className="form-label">Poisson's Ratio (ν)</label>
+              <input
+                type="number"
+                className="form-input"
+                value={props.customNu ?? 0.33}
+                onChange={e => props.onCustomNuChange?.(parseFloat(e.target.value) || 0.33)}
+                min={0.01}
+                max={0.5}
+                step={0.01}
+                disabled={isDisabled}
+              />
+            </div>
+          </div>
+        ) : material && (
           <div className="material-props">
             <div className="material-prop">
               <div className="label">E</div>

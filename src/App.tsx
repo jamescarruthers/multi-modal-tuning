@@ -20,6 +20,11 @@ function App() {
   // Material
   const [selectedMaterial, setSelectedMaterial] = useState('aluminum');
 
+  // Custom material properties (used when selectedMaterial === 'custom')
+  const [customE, setCustomE] = useState(10e9);       // Pa (default 10 GPa)
+  const [customRho, setCustomRho] = useState(1000);   // kg/m³
+  const [customNu, setCustomNu] = useState(0.33);     // Poisson's ratio
+
   // Tuning
   const [selectedPreset, setSelectedPreset] = useState('1:4:10');
   const [fundamentalFrequency, setFundamentalFrequency] = useState(175);
@@ -113,6 +118,12 @@ function App() {
           onBarThicknessChange={setBarThickness}
           selectedMaterial={selectedMaterial}
           onMaterialChange={setSelectedMaterial}
+          customE={customE}
+          customRho={customRho}
+          customNu={customNu}
+          onCustomEChange={setCustomE}
+          onCustomRhoChange={setCustomRho}
+          onCustomNuChange={setCustomNu}
           numCuts={numCuts}
           penaltyType={penaltyType}
           penaltyWeight={penaltyWeight}
@@ -161,6 +172,9 @@ function App() {
             barThickness={barThickness}
             onBarLengthChange={setBarLength}
             selectedMaterial={selectedMaterial}
+            customE={customE}
+            customRho={customRho}
+            customNu={customNu}
             tuningPreset={selectedPreset}
             onTuningPresetChange={setSelectedPreset}
             fundamentalFrequency={fundamentalFrequency}
@@ -178,6 +192,9 @@ function App() {
             barWidth={barWidth}
             barThickness={barThickness}
             selectedMaterial={selectedMaterial}
+            customE={customE}
+            customRho={customRho}
+            customNu={customNu}
             optimizationSettings={optimizationSettings}
             onLoadBar={handleLoadFromBatch}
             onAddToBatch={handleAddToBatch}
