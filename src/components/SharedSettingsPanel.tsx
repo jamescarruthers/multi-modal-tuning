@@ -325,12 +325,12 @@ export function SharedSettingsPanel(props: SharedSettingsPanelProps) {
           <div className="slider-group">
             <div className="slider-header">
               <span className="slider-label">Min</span>
-              <span className="slider-value">{props.minCutWidth} mm</span>
+              <span className="slider-value">{props.minCutWidth === 0 ? 'No limit' : `${props.minCutWidth} mm`}</span>
             </div>
             <input
               type="range"
               className="slider"
-              min={0.5}
+              min={0}
               max={20}
               step={0.5}
               value={props.minCutWidth}
