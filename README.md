@@ -26,7 +26,34 @@ The optimization uses:
 ### Prerequisites
 
 - Node.js 18+
-- Rust toolchain with `wasm-pack` (for building WASM module)
+- Rust **nightly** toolchain (required for multi-threaded WASM)
+- `wasm-pack` CLI
+- The `wasm32-unknown-unknown` target
+- The Rust `std` source component (for `build-std`)
+
+```bash
+# Install Rust nightly and required components
+rustup toolchain install nightly
+rustup component add rust-src --toolchain nightly
+rustup target add wasm32-unknown-unknown --toolchain nightly
+
+# Install wasm-pack
+cargo install wasm-pack
+```
+
+### Building the WASM Physics Module
+
+The WASM module must be built before running the app. It uses Rayon for multi-threaded parallel computation, which requires shared memory, atomics, and the nightly `build-std` feature.
+
+```bash
+cd wasm-physics
+
+RUSTUP_TOOLCHAIN=nightly wasm-pack build --target web --release
+```
+
+This compiles the Rust code to WASM with multi-threading support and outputs JavaScript/TypeScript bindings to `wasm-physics/pkg/`. The `.cargo/config.toml` in that directory configures the necessary flags for shared memory, atomics, bulk memory, and TLS exports.
+
+**Note:** The `[unstable] build-std` setting in `.cargo/config.toml` rebuilds the Rust standard library with threading support — this is why the nightly toolchain is required.
 
 ### Installation
 
@@ -43,6 +70,17 @@ npm run dev
 ```bash
 npm run build
 ```
+
+### COOP/COEP Headers
+
+Multi-threaded WASM requires `SharedArrayBuffer`, which browsers only enable when the page is served with these headers:
+
+```text
+Cross-Origin-Opener-Policy: same-origin
+Cross-Origin-Embedder-Policy: require-corp
+```
+
+The Vite dev server and preview server are already configured to send these headers. If deploying elsewhere, make sure your hosting environment sets them. Without these headers the app will fall back to single-threaded mode.
 
 ## Usage
 
@@ -66,7 +104,7 @@ The bar is modeled as a Timoshenko beam with variable cross-section. The optimiz
 
 ## Project Structure
 
-```
+```text
 multi-modal-tuning/
 ├── src/
 │   ├── components/       # React UI components
