@@ -40,8 +40,10 @@ export interface EAConfig {
   material: Material;
   targetFrequencies: number[];
   numCuts: number;
-  penaltyType: 'volume' | 'roughness' | 'none';
-  penaltyWeight: number;
+  useVolumePenalty: boolean;
+  volumeWeight: number;
+  useRoughnessPenalty: boolean;
+  roughnessWeight: number;
   eaParams: EAParameters;
   seedGenes?: number[];  // Optional seed genes to initialize population
   onProgress?: (update: ProgressUpdate) => void;
@@ -96,8 +98,10 @@ function batchEvaluatePopulation(
   bar: BarParameters,
   material: Material,
   targetFrequencies: number[],
-  penaltyType: 'volume' | 'roughness' | 'none',
-  penaltyWeight: number,
+  useVolumePenalty: boolean,
+  volumeWeight: number,
+  useRoughnessPenalty: boolean,
+  roughnessWeight: number,
   numElements: number,
   f1Priority: number = 1,
   numCuts: number = 1
@@ -114,11 +118,16 @@ function batchEvaluatePopulation(
     numCuts
   );
 
+  // Determine effective weights
+  const effectiveVolumeWeight = useVolumePenalty ? volumeWeight : 0;
+  const effectiveRoughnessWeight = useRoughnessPenalty ? roughnessWeight : 0;
+  const totalPenaltyWeight = effectiveVolumeWeight + effectiveRoughnessWeight;
+
   // Apply penalties if needed
   return population.map((ind, i) => {
     let fitness = tuningErrors[i];
 
-    if (penaltyType !== 'none' && penaltyWeight > 0) {
+    if (totalPenaltyWeight > 0) {
       // Extract cut genes only (exclude length trim)
       const cutGenes = ind.genes.slice(0, numCuts * 2);
       const cuts = genesToCuts(cutGenes);
@@ -127,13 +136,13 @@ function batchEvaluatePopulation(
       const lengthAdjust = getLengthAdjustFromGenes(ind.genes, numCuts);
       const effectiveL = bar.L - 2 * lengthAdjust;
 
-      if (penaltyType === 'volume') {
-        const penalty = computeVolumePenalty(cuts, effectiveL, bar.h0);
-        fitness = (1 - penaltyWeight) * fitness + penaltyWeight * penalty;
-      } else {
-        const penalty = computeRoughnessPenalty(cuts, bar.h0);
-        fitness = (1 - penaltyWeight) * fitness + penaltyWeight * penalty;
-      }
+      // Compute penalties as needed
+      const volumePenalty = effectiveVolumeWeight > 0 ? computeVolumePenalty(cuts, effectiveL, bar.h0) : 0;
+      const roughnessPenalty = effectiveRoughnessWeight > 0 ? computeRoughnessPenalty(cuts, bar.h0) : 0;
+
+      // Combined objective: E = (1 - alpha_v - alpha_r) * epsilon + alpha_v * V + alpha_r * S
+      const tuningWeight = Math.max(0, 1 - totalPenaltyWeight);
+      fitness = tuningWeight * fitness + effectiveVolumeWeight * volumePenalty + effectiveRoughnessWeight * roughnessPenalty;
     }
 
     return { ...ind, fitness };
@@ -152,8 +161,10 @@ export async function runEvolutionaryAlgorithm(config: EAConfig): Promise<Optimi
     material,
     targetFrequencies,
     numCuts,
-    penaltyType,
-    penaltyWeight,
+    useVolumePenalty,
+    volumeWeight,
+    useRoughnessPenalty,
+    roughnessWeight,
     eaParams,
     seedGenes,
     onProgress,
@@ -178,7 +189,7 @@ export async function runEvolutionaryAlgorithm(config: EAConfig): Promise<Optimi
     // Evaluate the uncut bar
     const [evaluatedUncut] = batchEvaluatePopulation(
       [uncutBar], bar, material, targetFrequencies,
-      penaltyType, penaltyWeight, eaParams.numElements, f1Priority, numCuts
+      useVolumePenalty, volumeWeight, useRoughnessPenalty, roughnessWeight, eaParams.numElements, f1Priority, numCuts
     );
     const { computedFrequencies, errorsInCents, lengthTrim } = computeFrequenciesAndErrors(
       evaluatedUncut.genes,
@@ -205,7 +216,7 @@ export async function runEvolutionaryAlgorithm(config: EAConfig): Promise<Optimi
   // Evaluate initial population
   population = batchEvaluatePopulation(
     population, bar, material, targetFrequencies,
-    penaltyType, penaltyWeight, eaParams.numElements, f1Priority, numCuts
+    useVolumePenalty, volumeWeight, useRoughnessPenalty, roughnessWeight, eaParams.numElements, f1Priority, numCuts
   );
 
   // Calculate percentages for different operations
@@ -271,7 +282,7 @@ export async function runEvolutionaryAlgorithm(config: EAConfig): Promise<Optimi
     if (newOffspring.length > 0) {
       const evaluatedOffspring = batchEvaluatePopulation(
         newOffspring, bar, material, targetFrequencies,
-        penaltyType, penaltyWeight, eaParams.numElements, f1Priority, numCuts
+        useVolumePenalty, volumeWeight, useRoughnessPenalty, roughnessWeight, eaParams.numElements, f1Priority, numCuts
       );
       nextGeneration.push(...evaluatedOffspring);
     }
@@ -329,8 +340,10 @@ export async function runEvolutionaryAlgorithm(config: EAConfig): Promise<Optimi
     effectiveBar,
     material,
     targetFrequencies,
-    penaltyType,
-    penaltyWeight,
+    useVolumePenalty,
+    volumeWeight,
+    useRoughnessPenalty,
+    roughnessWeight,
     eaParams.numElements
   );
 
@@ -360,8 +373,10 @@ export async function runAdaptiveEvolution(config: EAConfig): Promise<Optimizati
     material,
     targetFrequencies,
     numCuts,
-    penaltyType,
-    penaltyWeight,
+    useVolumePenalty,
+    volumeWeight,
+    useRoughnessPenalty,
+    roughnessWeight,
     eaParams,
     onProgress,
     shouldStop
@@ -384,7 +399,7 @@ export async function runAdaptiveEvolution(config: EAConfig): Promise<Optimizati
     const uncutBar = createUncutBarIndividual(numCuts, bounds, bar.h0);
     const [evaluatedUncut] = batchEvaluatePopulation(
       [uncutBar], bar, material, targetFrequencies,
-      penaltyType, penaltyWeight, eaParams.numElements, f1Priority, numCuts
+      useVolumePenalty, volumeWeight, useRoughnessPenalty, roughnessWeight, eaParams.numElements, f1Priority, numCuts
     );
     const { computedFrequencies, errorsInCents, lengthTrim } = computeFrequenciesAndErrors(
       evaluatedUncut.genes,
@@ -415,7 +430,7 @@ export async function runAdaptiveEvolution(config: EAConfig): Promise<Optimizati
   // Evaluate initial population
   population = batchEvaluatePopulation(
     population, bar, material, targetFrequencies,
-    penaltyType, penaltyWeight, eaParams.numElements, f1Priority, numCuts
+    useVolumePenalty, volumeWeight, useRoughnessPenalty, roughnessWeight, eaParams.numElements, f1Priority, numCuts
   );
 
   const numElite = Math.max(1, Math.floor(eaParams.populationSize * eaParams.elitismPercent / 100));
@@ -448,7 +463,7 @@ export async function runAdaptiveEvolution(config: EAConfig): Promise<Optimizati
     if (newOffspring.length > 0) {
       const evaluatedOffspring = batchEvaluatePopulation(
         newOffspring, bar, material, targetFrequencies,
-        penaltyType, penaltyWeight, eaParams.numElements, f1Priority, numCuts
+        useVolumePenalty, volumeWeight, useRoughnessPenalty, roughnessWeight, eaParams.numElements, f1Priority, numCuts
       );
       nextGeneration.push(...evaluatedOffspring);
     }
@@ -502,8 +517,10 @@ export async function runAdaptiveEvolution(config: EAConfig): Promise<Optimizati
     effectiveBar,
     material,
     targetFrequencies,
-    penaltyType,
-    penaltyWeight,
+    useVolumePenalty,
+    volumeWeight,
+    useRoughnessPenalty,
+    roughnessWeight,
     eaParams.numElements
   );
 

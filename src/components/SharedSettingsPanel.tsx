@@ -18,8 +18,10 @@ import { isValidGeneCode } from '../optimization/geneCodec';
 export interface OptimizationSettings {
   tuningPreset: string;
   numCuts: number;
-  penaltyType: 'volume' | 'roughness' | 'none';
-  penaltyWeight: number;
+  useVolumePenalty: boolean;
+  volumeWeight: number;
+  useRoughnessPenalty: boolean;
+  roughnessWeight: number;
   populationSize: number;
   maxGenerations: number;
   targetError: number;
@@ -60,8 +62,10 @@ interface SharedSettingsPanelProps {
 
   // Optimization params
   numCuts: number;
-  penaltyType: 'volume' | 'roughness' | 'none';
-  penaltyWeight: number;
+  useVolumePenalty: boolean;
+  volumeWeight: number;
+  useRoughnessPenalty: boolean;
+  roughnessWeight: number;
   populationSize: number;
   maxGenerations: number;
   f1Priority: number;
@@ -76,8 +80,10 @@ interface SharedSettingsPanelProps {
   targetError: number;
   seedGeneCode: string;
   onNumCutsChange: (n: number) => void;
-  onPenaltyTypeChange: (type: 'volume' | 'roughness' | 'none') => void;
-  onPenaltyWeightChange: (weight: number) => void;
+  onUseVolumePenaltyChange: (use: boolean) => void;
+  onVolumeWeightChange: (weight: number) => void;
+  onUseRoughnessPenaltyChange: (use: boolean) => void;
+  onRoughnessWeightChange: (weight: number) => void;
   onPopulationSizeChange: (size: number) => void;
   onMaxGenerationsChange: (gen: number) => void;
   onF1PriorityChange: (priority: number) => void;
@@ -457,38 +463,71 @@ export function SharedSettingsPanel(props: SharedSettingsPanelProps) {
           <div className="slider-hint">Weight fundamental frequency errors higher</div>
         </div>
 
-        <div className="form-group">
-          <label className="form-label">Penalty Type</label>
-          <select
-            className="form-select"
-            value={props.penaltyType}
-            disabled={isOptimizationDisabled}
-            onChange={e => props.onPenaltyTypeChange(e.target.value as 'volume' | 'roughness' | 'none')}
-          >
-            <option value="none">None</option>
-            <option value="volume">Volume (minimize removal)</option>
-            <option value="roughness">Roughness (smooth profile)</option>
-          </select>
-        </div>
+        <div className="settings-subsection">
+          <div className="subsection-label">Penalties</div>
 
-        {props.penaltyType !== 'none' && (
-          <div className="slider-group">
-            <div className="slider-header">
-              <span className="slider-label">Penalty Weight (α)</span>
-              <span className="slider-value">{props.penaltyWeight.toFixed(2)}</span>
-            </div>
-            <input
-              type="range"
-              className="slider"
-              min={0}
-              max={0.3}
-              step={0.01}
-              value={props.penaltyWeight}
-              disabled={isOptimizationDisabled}
-              onChange={e => props.onPenaltyWeightChange(parseFloat(e.target.value))}
-            />
+          {/* Volume Penalty */}
+          <div className="penalty-row">
+            <label className="checkbox-label">
+              <input
+                type="checkbox"
+                checked={props.useVolumePenalty}
+                disabled={isOptimizationDisabled}
+                onChange={e => props.onUseVolumePenaltyChange(e.target.checked)}
+              />
+              <span>Volume (minimize removal)</span>
+            </label>
+            {props.useVolumePenalty && (
+              <div className="slider-group compact">
+                <div className="slider-header">
+                  <span className="slider-label">Weight (α<sub>v</sub>)</span>
+                  <span className="slider-value">{props.volumeWeight.toFixed(2)}</span>
+                </div>
+                <input
+                  type="range"
+                  className="slider"
+                  min={0}
+                  max={0.3}
+                  step={0.01}
+                  value={props.volumeWeight}
+                  disabled={isOptimizationDisabled}
+                  onChange={e => props.onVolumeWeightChange(parseFloat(e.target.value))}
+                />
+              </div>
+            )}
           </div>
-        )}
+
+          {/* Roughness Penalty */}
+          <div className="penalty-row">
+            <label className="checkbox-label">
+              <input
+                type="checkbox"
+                checked={props.useRoughnessPenalty}
+                disabled={isOptimizationDisabled}
+                onChange={e => props.onUseRoughnessPenaltyChange(e.target.checked)}
+              />
+              <span>Roughness (smooth profile)</span>
+            </label>
+            {props.useRoughnessPenalty && (
+              <div className="slider-group compact">
+                <div className="slider-header">
+                  <span className="slider-label">Weight (α<sub>r</sub>)</span>
+                  <span className="slider-value">{props.roughnessWeight.toFixed(2)}</span>
+                </div>
+                <input
+                  type="range"
+                  className="slider"
+                  min={0}
+                  max={0.3}
+                  step={0.01}
+                  value={props.roughnessWeight}
+                  disabled={isOptimizationDisabled}
+                  onChange={e => props.onRoughnessWeightChange(parseFloat(e.target.value))}
+                />
+              </div>
+            )}
+          </div>
+        </div>
       </div>
 
       {/* Evolution Settings */}

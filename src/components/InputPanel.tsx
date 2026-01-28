@@ -85,8 +85,10 @@ interface InputPanelProps {
 
   // Optimization params
   numCuts: number;
-  penaltyType: 'volume' | 'roughness' | 'none';
-  penaltyWeight: number;
+  useVolumePenalty: boolean;
+  volumeWeight: number;
+  useRoughnessPenalty: boolean;
+  roughnessWeight: number;
   populationSize: number;
   maxGenerations: number;
   f1Priority: number;
@@ -101,8 +103,10 @@ interface InputPanelProps {
   targetError: number;
   seedGeneCode: string;
   onNumCutsChange: (n: number) => void;
-  onPenaltyTypeChange: (type: 'volume' | 'roughness' | 'none') => void;
-  onPenaltyWeightChange: (weight: number) => void;
+  onUseVolumePenaltyChange: (use: boolean) => void;
+  onVolumeWeightChange: (weight: number) => void;
+  onUseRoughnessPenaltyChange: (use: boolean) => void;
+  onRoughnessWeightChange: (weight: number) => void;
   onPopulationSizeChange: (size: number) => void;
   onMaxGenerationsChange: (gen: number) => void;
   onF1PriorityChange: (priority: number) => void;
@@ -422,36 +426,61 @@ export function InputPanel(props: InputPanelProps) {
           </div>
         </div>
 
-        <div className="form-group">
-          <label className="form-label">Penalty Type</label>
-          <select
-            className="form-select"
-            value={props.penaltyType}
-            onChange={e => props.onPenaltyTypeChange(e.target.value as 'volume' | 'roughness' | 'none')}
-          >
-            <option value="none">None</option>
-            <option value="volume">Volume (minimize material removal)</option>
-            <option value="roughness">Roughness (smooth profile)</option>
-          </select>
+        <div className="penalty-row">
+          <label className="checkbox-label">
+            <input
+              type="checkbox"
+              checked={props.useVolumePenalty}
+              onChange={e => props.onUseVolumePenaltyChange(e.target.checked)}
+            />
+            <span>Volume Penalty</span>
+          </label>
+          {props.useVolumePenalty && (
+            <div className="slider-group compact">
+              <div className="slider-header">
+                <span className="slider-label">Weight</span>
+                <span className="slider-value">{props.volumeWeight.toFixed(2)}</span>
+              </div>
+              <input
+                type="range"
+                className="slider"
+                min={0}
+                max={0.3}
+                step={0.01}
+                value={props.volumeWeight}
+                onChange={e => props.onVolumeWeightChange(parseFloat(e.target.value))}
+              />
+            </div>
+          )}
         </div>
 
-        {props.penaltyType !== 'none' && (
-          <div className="slider-group">
-            <div className="slider-header">
-              <span className="slider-label">Penalty Weight (α)</span>
-              <span className="slider-value">{props.penaltyWeight.toFixed(2)}</span>
-            </div>
+        <div className="penalty-row">
+          <label className="checkbox-label">
             <input
-              type="range"
-              className="slider"
-              min={0}
-              max={0.3}
-              step={0.01}
-              value={props.penaltyWeight}
-              onChange={e => props.onPenaltyWeightChange(parseFloat(e.target.value))}
+              type="checkbox"
+              checked={props.useRoughnessPenalty}
+              onChange={e => props.onUseRoughnessPenaltyChange(e.target.checked)}
             />
-          </div>
-        )}
+            <span>Roughness Penalty</span>
+          </label>
+          {props.useRoughnessPenalty && (
+            <div className="slider-group compact">
+              <div className="slider-header">
+                <span className="slider-label">Weight</span>
+                <span className="slider-value">{props.roughnessWeight.toFixed(2)}</span>
+              </div>
+              <input
+                type="range"
+                className="slider"
+                min={0}
+                max={0.3}
+                step={0.01}
+                value={props.roughnessWeight}
+                onChange={e => props.onRoughnessWeightChange(parseFloat(e.target.value))}
+              />
+            </div>
+          )}
+        </div>
 
         <div className="slider-group">
           <div className="slider-header">
